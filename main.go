@@ -7,18 +7,32 @@ import (
 	"net/http"
 )
 
+const (
+	portDesc    string = "The port the server will run on."
+	addrDesc    string = "The address the server will run on."
+	defaultPort int    = 3400
+	defaultDir  string = "./"
+	defaultAddr string = "0.0.0.0"
+)
+
 func main() {
-	port := flag.Int("port", 3400, "The port the server will run on.")
-	addr := flag.String("address", "0.0.0.0", "The address the server will run on.")
+	// Define long flags
+	port := flag.Int("port", defaultPort, portDesc)
+	addr := flag.String("address", defaultAddr, addrDesc)
+	// Define short flags
+	flag.IntVar(port, "p", defaultPort, portDesc)
+	flag.StringVar(addr, "a", defaultAddr, addrDesc)
 	flag.Parse()
+
 	dirToServe := flag.Arg(0)
 	if len(dirToServe) == 0 {
-		dirToServe = "./"
+		dirToServe = defaultDir
 	}
 
 	http.Handle("/", http.FileServer(http.Dir(dirToServe)))
 
 	ip := fmt.Sprintf("%s:%v", *addr, *port)
+
 	log.Printf("Serving %v on %v\n", dirToServe, ip)
 	err := http.ListenAndServe(ip, nil)
 	if err != nil {
