@@ -21,7 +21,7 @@ Then copy the generated executable to a directory of your choosing.
 If you want to skip those steps and you aren't in a directory with a go.mod file. You can use:
 
 ```
-go get -u -v github.com/wsand02/heheserver
+go install github.com/wsand02/heheserver@v0.0.1
 ```
 
 ## Usage
