@@ -1,3 +1,3 @@
 module github.com/wsand02/heheserver
 
-go 1.14
+go 1.25.0
