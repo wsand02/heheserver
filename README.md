@@ -1,7 +1,7 @@
 # heheserver
 [![Go](https://github.com/wsand02/heheserver/actions/workflows/go.yml/badge.svg)](https://github.com/wsand02/heheserver/actions/workflows/go.yml)
 
-A simple barebones http file server with file omission using heheignore files.
+A simple barebones readonly http file server with file omission using heheignore files.
 Written in Go.
 
 Made it because the built-in Python web server didn't properly support serving videos,
