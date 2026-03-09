@@ -26,6 +26,15 @@ func TestOpenIgnoreFile(t *testing.T) {
 	defer public.Close()
 }
 
+func TestOpenErr(t *testing.T) {
+	dir := t.TempDir()
+	hfs := Dir(dir)
+	_, err := hfs.Open("/test.txt")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
 func TestReaddirIgnoreFile(t *testing.T) {
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, ".heheignore"), []byte("secret.txt\n"), 0644)
