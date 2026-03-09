@@ -20,12 +20,6 @@ func Dir(root string) http.FileSystem {
 }
 
 func (hfs HeheFS) Open(name string) (http.File, error) {
-	f, err := hfs.FileSystem.Open(name)
-
-	if err != nil {
-		return nil, err
-	}
-
 	rules := getIgnoreForPath(hfs.Root, filepath.Join(hfs.Root, filepath.Dir(name)))
 	// Normalize path by removing leading slash for pattern matching
 	normPath := name
@@ -35,6 +29,13 @@ func (hfs HeheFS) Open(name string) (http.File, error) {
 	if matchesAny(rules, normPath) {
 		return nil, fs.ErrNotExist
 	}
+
+	f, err := hfs.FileSystem.Open(name)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return HeheFile{f, name, hfs.Root}, nil
 }
 
