@@ -1,8 +1,9 @@
-package main
+package internal
 
 import (
 	"errors"
 	"io/fs"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -20,6 +21,7 @@ func Dir(root string) http.FileSystem {
 }
 
 func (hfs HeheFS) Open(name string) (http.File, error) {
+	log.Printf("Trying to open %s", name)
 	rules := getIgnoreForPath(hfs.Root, filepath.Join(hfs.Root, filepath.Dir(name)))
 	// Normalize path by removing leading slash for pattern matching
 	normPath := name
