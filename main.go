@@ -1,24 +1,14 @@
 package main
 
 import (
-	"embed"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 
 	"github.com/wsand02/heheserver/internal/fs"
 )
 
-//go:embed templates
-var templates embed.FS
-
 func main() {
-
-	tmpl, err := template.ParseFS(templates, "templates/*.html")
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	if *gallery {
 		log.Println("Embedded Gallery enabled")
