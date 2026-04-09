@@ -44,7 +44,7 @@ heheserver [options] [path]
 
 `-p` or `--port` The port the server will run on. (default 3400)
 
-`-a` or `--address` The address the server will run on. (default 0.0.0.0)
+`-h` or `--host` The host the server will run on. (default 0.0.0.0)
 
 `-g` or `--gallery` Enables the embedded gallery view. (default omitted => false)
 
