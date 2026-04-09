@@ -1,45 +1,45 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
+	"strings"
 
 	"github.com/wsand02/heheserver/internal/fs"
 	"github.com/wsand02/heheserver/internal/server/templates"
 )
 
-type Item struct {
-	URL string
+type GalleryContext struct {
+	Items []GalleryItem
 }
 
-type Context struct {
-	Items []Item
+type GalleryItem struct {
+	Filename string
+	IsDir    bool
+	Path     string
 }
 
-func BuildContext(hfs fs.HeheFS) *Context {
-	hf, err := hfs.Open(hfs.Root)
+func (gi *GalleryItem) GetUrl() string {
+	if gi.IsDir {
+		return strings.Join([]string{"?path=", gi.Path, gi.Filename, "/"}, "")
+	}
+	return strings.Join([]string{"/fs", gi.Path, gi.Filename}, "")
+}
+
+func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS) {
+	hf, err := hfs.Open(ctx)
 	if err != nil {
-		log.Fatal(err)
-	}
-	files, err := hf.Readdir(-1)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var items []Item
-	for i := 0; i < len(files); i++ {
-		newitem := Item{URL: files[i].Name()}
-		items = append(items, newitem)
-	}
-	return &Context{
-		Items: items,
-	}
-}
-
-func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx any) {
-	ctx, ok := ctx.(*Context)
-	if !ok {
-		http.Error(w, "Invalid context", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	templates.RenderTemplate(w, "list", ctx)
+	dirlis, err := hf.Readdir(-1)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var gc GalleryContext
+	for i := 0; i < len(dirlis); i++ {
+		gc.Items = append(gc.Items, GalleryItem{Filename: dirlis[i].Name(), IsDir: dirlis[i].IsDir(), Path: ctx})
+	}
+
+	templates.RenderTemplate(w, "list", gc)
 }

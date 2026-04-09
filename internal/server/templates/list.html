@@ -7,7 +7,7 @@
   </head>
   <body>
     {{ range .Items }}
-    <p>{{ .URL }}</p>
+    <p><a href="{{ .GetUrl }}">{{ .Filename }}</a></p>
     {{ end }}
   </body>
 </html>

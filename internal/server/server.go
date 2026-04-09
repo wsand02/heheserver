@@ -13,52 +13,51 @@ import (
 type Server struct {
 	config *config.Config
 	mux    *http.ServeMux
-	hfs    fs.HeheFS
+	hfs    *fs.HeheFS
 }
 
-func (s *Server) GetHfs() fs.HeheFS {
-	return s.hfs
-}
-
-func (s *Server) makeHfsHandler(fn func(http.ResponseWriter, *http.Request, any)) http.HandlerFunc {
+func (s *Server) makeHfsInjector(fn func(http.ResponseWriter, *http.Request, string, *fs.HeheFS)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := handlers.BuildContext(s.hfs)
-		fn(w, r, ctx)
+		q := r.URL.Query().Get("path")
+		if q == "" {
+			q = "/"
+		}
+		fn(w, r, q, s.hfs)
 	}
 }
 
-func newGallery(cfg *config.Config, hfs http.FileSystem, hehefs fs.HeheFS) *Server {
-	mux := http.NewServeMux()
+func newGallery(cfg *config.Config, mux *http.ServeMux, hfs *fs.HeheFS) *Server {
 	mux.Handle("/fs/", http.StripPrefix("/fs", http.FileServer(hfs)))
 	srv := &Server{
-		config: cfg,
 		mux:    mux,
-		hfs:    hehefs,
+		config: cfg,
+		hfs:    hfs,
 	}
-	mux.HandleFunc("/", srv.makeHfsHandler(handlers.GalleryHandler))
+	srv.mux.HandleFunc("/", srv.makeHfsInjector(handlers.GalleryHandler))
 	return srv
 }
 
-func newFileServer(cfg *config.Config, hfs http.FileSystem) *Server {
-	mux := http.NewServeMux()
+func newFileServer(cfg *config.Config, mux *http.ServeMux, hfs *fs.HeheFS) *Server {
 	mux.Handle("/", http.FileServer(hfs))
 	return &Server{
-		config: cfg,
 		mux:    mux,
+		config: cfg,
+		hfs:    hfs,
 	}
 }
 
 func NewServer(cfg *config.Config) *Server {
+	mux := http.NewServeMux()
 	hfs := fs.Dir(cfg.Directory)
-	heheFs, ok := hfs.(*fs.HeheFS) // *HeheFS
+	hfsa, ok := hfs.(*fs.HeheFS)
 	if !ok {
-		log.Fatal("hfs not hehefs")
+		log.Fatal("not hehefs")
 	}
 	if cfg.Gallery {
 		fmt.Println("Gallery Enabled")
-		return newGallery(cfg, hfs, *heheFs)
+		return newGallery(cfg, mux, hfsa)
 	}
-	return newFileServer(cfg, hfs)
+	return newFileServer(cfg, mux, hfsa)
 }
 
 func (s *Server) Start() error {
