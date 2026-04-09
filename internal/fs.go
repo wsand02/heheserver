@@ -3,25 +3,31 @@ package internal
 import (
 	"errors"
 	"io/fs"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 )
 
+// HeheFS expands on http.FileSystem to allow for file omission,
+// while also adding a Root field for the root of the filesystem
+// since heheignore needs it for traversal.
 type HeheFS struct {
 	FileSystem http.FileSystem
 	Root       string
 }
 
+// Dir is a helper function that wraps http.Dir in a HeheFS
+// so that it can be fed directly into http.FileServer.
 func Dir(root string) http.FileSystem {
 	fs := http.Dir(root)
 
 	return &HeheFS{FileSystem: fs, Root: root}
 }
 
+// Open wraps HeheFS.FileSystem.Open but omits files based on heheignore rules.
+// If file matches a rule in heheignore we pretend it doesn't exist
+// and return fs.ErrNotExist.
 func (hfs HeheFS) Open(name string) (http.File, error) {
-	log.Printf("Trying to open %s", name)
 	rules := getIgnoreForPath(hfs.Root, filepath.Join(hfs.Root, filepath.Dir(name)))
 	// Normalize path by removing leading slash for pattern matching
 	normPath := name
@@ -41,6 +47,8 @@ func (hfs HeheFS) Open(name string) (http.File, error) {
 	return HeheFile{f, name, hfs.Root}, nil
 }
 
+// HeheFile expands on http.File while also storing the currentPath and root dir
+// which are required for heheignore based file omission.
 type HeheFile struct {
 	http.File
 	currentPath string
@@ -49,6 +57,7 @@ type HeheFile struct {
 
 var errMissingReadDir = errors.New("Missing ReadDir")
 
+// Readdir is derived from os.File.Readdir but omits files matching heheignore rules.
 func (h HeheFile) Readdir(count int) ([]os.FileInfo, error) {
 	d, ok := h.File.(fs.ReadDirFile)
 	if !ok {

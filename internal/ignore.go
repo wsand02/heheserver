@@ -13,6 +13,8 @@ var (
 	cacheMu     sync.RWMutex
 )
 
+// getIgnoreForPath returns a slice of ignore rules for the specified path,
+// recursively traverses from root to the path appending all rules along the way.
 func getIgnoreForPath(root, path string) []*ignore.GitIgnore {
 	root = filepath.Clean(root)
 	dir := filepath.Clean(path)
