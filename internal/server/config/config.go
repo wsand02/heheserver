@@ -8,28 +8,32 @@ import (
 
 const (
 	portDesc           string = "The port the server will run on."
-	addrDesc           string = "The address the server will run on."
+	hostDesc           string = "The host the server will run on."
 	defaultPort        int    = 3400
 	defaultDir         string = "./"
-	defaultAddr        string = "0.0.0.0"
+	defaultHost        string = "0.0.0.0"
 	galleryDesc        string = "Enables the embedded gallery page. Which currently uses ThinGallery."
 	defaultGalleryFlag bool   = false
 )
 
 type Config struct {
 	Port      int
-	Address   string
+	Host      string
 	Gallery   bool
 	Directory string
 }
 
+func (c *Config) GetAddress() string {
+	return fmt.Sprintf("%s:%v", c.Host, c.Port)
+}
+
 func ParseFromFlags() (*Config, error) {
 	port := flag.Int("port", defaultPort, portDesc)
-	addr := flag.String("address", defaultAddr, addrDesc)
+	host := flag.String("host", defaultHost, hostDesc)
 	gallery := flag.Bool("gallery", defaultGalleryFlag, galleryDesc)
 	// Define short flags
 	flag.IntVar(port, "p", defaultPort, portDesc)
-	flag.StringVar(addr, "a", defaultAddr, addrDesc)
+	flag.StringVar(host, "h", defaultHost, hostDesc)
 	flag.BoolVar(gallery, "g", defaultGalleryFlag, galleryDesc)
 	flag.Parse()
 
@@ -46,7 +50,7 @@ func ParseFromFlags() (*Config, error) {
 
 	return &Config{
 		Port:      *port,
-		Address:   *addr,
+		Host:      *host,
 		Directory: dirToServe,
 		Gallery:   *gallery,
 	}, nil
