@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/wsand02/heheserver/internal"
+	"github.com/wsand02/heheserver/internal/fs"
 )
 
 //go:embed templates
@@ -53,7 +53,7 @@ func main() {
 
 	if *gallery {
 		log.Println("Embedded Gallery enabled")
-		http.Handle("/fs/", http.StripPrefix("/fs", http.FileServer(internal.Dir(dirToServe))))
+		http.Handle("/fs/", http.StripPrefix("/fs", http.FileServer(fs.Dir(dirToServe))))
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			err := tmpl.ExecuteTemplate(w, "gallery.html", nil)
 			if err != nil {
@@ -63,7 +63,7 @@ func main() {
 			}
 		})
 	} else {
-		http.Handle("/", http.FileServer(internal.Dir(dirToServe)))
+		http.Handle("/", http.FileServer(fs.Dir(dirToServe)))
 	}
 
 	ip := fmt.Sprintf("%s:%v", *addr, *port)

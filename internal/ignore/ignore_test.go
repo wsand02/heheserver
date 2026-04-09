@@ -1,4 +1,4 @@
-package internal
+package ignore
 
 import (
 	"os"
@@ -17,7 +17,7 @@ func TestGetIgnoreForPathRace(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			getIgnoreForPath(root, sub)
+			GetIgnoreForPath(root, sub)
 		}()
 	}
 	wg.Wait()

@@ -1,4 +1,4 @@
-package internal
+package fs
 
 import (
 	"errors"
@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/wsand02/heheserver/internal/ignore"
 )
 
 // HeheFS expands on http.FileSystem to allow for file omission,
@@ -28,13 +30,13 @@ func Dir(root string) http.FileSystem {
 // If file matches a rule in heheignore we pretend it doesn't exist
 // and return fs.ErrNotExist.
 func (hfs HeheFS) Open(name string) (http.File, error) {
-	rules := getIgnoreForPath(hfs.Root, filepath.Join(hfs.Root, filepath.Dir(name)))
+	rules := ignore.GetIgnoreForPath(hfs.Root, filepath.Join(hfs.Root, filepath.Dir(name)))
 	// Normalize path by removing leading slash for pattern matching
 	normPath := name
 	if len(name) > 0 && name[0] == '/' {
 		normPath = name[1:]
 	}
-	if matchesAny(rules, normPath) {
+	if ignore.MatchesAny(rules, normPath) {
 		return nil, fs.ErrNotExist
 	}
 
@@ -72,13 +74,13 @@ func (h HeheFile) Readdir(count int) ([]os.FileInfo, error) {
 				// Pretend it doesn't exist, like (*os.File).Readdir does.
 				continue
 			}
-			rules := getIgnoreForPath(h.root, filepath.Join(h.root, h.currentPath))
+			rules := ignore.GetIgnoreForPath(h.root, filepath.Join(h.root, h.currentPath))
 			// Normalize path by removing leading slash for pattern matching
 			pathToCheck := filepath.Join(h.currentPath, info.Name())
 			if len(pathToCheck) > 0 && pathToCheck[0] == '/' {
 				pathToCheck = pathToCheck[1:]
 			}
-			if matchesAny(rules, pathToCheck) {
+			if ignore.MatchesAny(rules, pathToCheck) {
 				continue
 			}
 			list = append(list, info)

@@ -1,4 +1,4 @@
-package internal
+package ignore
 
 import (
 	"path/filepath"
@@ -15,7 +15,7 @@ var (
 
 // getIgnoreForPath returns a slice of ignore rules for the specified path,
 // recursively traverses from root to the path appending all rules along the way.
-func getIgnoreForPath(root, path string) []*ignore.GitIgnore {
+func GetIgnoreForPath(root, path string) []*ignore.GitIgnore {
 	root = filepath.Clean(root)
 	dir := filepath.Clean(path)
 
@@ -53,7 +53,7 @@ func getIgnoreForPath(root, path string) []*ignore.GitIgnore {
 	return rules
 }
 
-func matchesAny(rules []*ignore.GitIgnore, path string) bool {
+func MatchesAny(rules []*ignore.GitIgnore, path string) bool {
 	for _, r := range rules {
 		if r.MatchesPath(path) {
 			return true
