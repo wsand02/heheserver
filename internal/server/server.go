@@ -1,7 +1,7 @@
 package server
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 
 	"github.com/wsand02/heheserver/internal/fs"
@@ -14,23 +14,36 @@ type Server struct {
 	mux    *http.ServeMux
 }
 
-func NewServer(cfg *config.Config) (*Server, error) {
+func newGallery(cfg *config.Config, hfs http.FileSystem) *Server {
 	mux := http.NewServeMux()
+	mux.Handle("/fs/", http.StripPrefix("/fs", http.FileServer(hfs)))
+	mux.HandleFunc("/", handlers.GalleryHandler)
+	return &Server{
+		config: cfg,
+		mux:    mux,
+	}
+}
+
+func newFileServer(cfg *config.Config, hfs http.FileSystem) *Server {
+	mux := http.NewServeMux()
+	mux.Handle("/", http.FileServer(hfs))
+	return &Server{
+		config: cfg,
+		mux:    mux,
+	}
+}
+
+func NewServer(cfg *config.Config) *Server {
 	hfs := fs.Dir(cfg.Directory)
 	if cfg.Gallery {
-		mux.Handle("/fs/", http.StripPrefix("/fs", http.FileServer(hfs)))
-		mux.HandleFunc("/", handlers.GalleryHandler)
-	} else {
-		mux.Handle("/", http.FileServer(hfs))
+		fmt.Println("Gallery Enabled")
+		return newGallery(cfg, hfs)
 	}
-	return &Server{
-		config: &config.Config{},
-		mux:    mux,
-	}, nil
+	return newFileServer(cfg, hfs)
 }
 
 func (s *Server) Start() error {
 	addr := s.config.GetAddress()
-	log.Printf("Serving %v on %v\n", s.config.Directory, addr)
+	fmt.Printf("Serving %v on %v\n", s.config.Directory, addr)
 	return http.ListenAndServe(addr, s.mux)
 }

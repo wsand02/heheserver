@@ -5,10 +5,10 @@ import (
 	"runtime/debug"
 )
 
-func PrintVersion() {
+func GetVersion() string {
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
 		fmt.Println("idk")
 	}
-	fmt.Println(info.Main.Version)
+	return info.Main.Version
 }

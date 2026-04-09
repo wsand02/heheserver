@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/wsand02/heheserver/internal/server"
@@ -9,14 +10,11 @@ import (
 )
 
 func main() {
-	version.PrintVersion()
+	fmt.Printf("heheserver %s\n", version.GetVersion())
 	config, err := config.ParseFromFlags()
 	if err != nil {
 		log.Fatal(err)
 	}
-	s, err := server.NewServer(config)
-	if err != nil {
-		log.Fatal(err)
-	}
+	s := server.NewServer(config)
 	s.Start()
 }
