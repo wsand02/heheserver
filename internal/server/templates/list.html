@@ -16,7 +16,20 @@
         <div class="break-inside-avoid bg-white rounded-2xl shadow-md p-4">
           {{ if .IsImage }}
           <img
+            {{
+            if
+            and
+            .IsResizable
+            $.Resize
+            }}
+            src="{{ .GetResized }}"
+            {{
+            else
+            }}
             src="{{ .GetUrl }}"
+            {{
+            end
+            }}
             alt="{{ .Filename }}"
             loading="lazy"
             class="w-full rounded-xl mb-3"

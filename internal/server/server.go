@@ -16,21 +16,26 @@ type Server struct {
 	hfs    *fs.HeheFS
 }
 
-func (s *Server) makeHfsInjector(fn func(http.ResponseWriter, *http.Request, string, *fs.HeheFS)) http.HandlerFunc {
+func (s *Server) makeHfsInjector(fn func(http.ResponseWriter, *http.Request, string, *fs.HeheFS, *config.Config)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query().Get("path")
 		if q == "" {
 			q = "/"
 		}
-		fn(w, r, q, s.hfs)
+		fn(w, r, q, s.hfs, s.config)
 	}
 }
 
 func (s *Server) setupRoutes() {
 	if s.config.Gallery {
+		fmt.Println("Enabling Gallery")
 		s.mux.Handle("/fs/", http.StripPrefix("/fs", http.FileServer(s.hfs)))
 		s.mux.HandleFunc("/", s.makeHfsInjector(handlers.GalleryHandler))
-		s.mux.HandleFunc("/resize/", s.makeHfsInjector(handlers.ResizeHandler))
+		if s.config.Resize {
+			fmt.Println("Enabling Resize Endpoint")
+			s.mux.HandleFunc("/resize/", s.makeHfsInjector(handlers.ResizeHandler))
+		}
+
 		return
 	}
 	s.mux.Handle("/", http.FileServer(s.hfs))

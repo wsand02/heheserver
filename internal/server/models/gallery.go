@@ -11,10 +11,6 @@ type GalleryItem struct {
 	Path     string
 }
 
-type GalleryContext struct {
-	Items []GalleryItem
-}
-
 func (gi *GalleryItem) IsImage() bool {
 	ext := strings.ToLower(filepath.Ext(gi.Filename))
 	switch ext {
@@ -43,10 +39,24 @@ func (gi *GalleryItem) IsAudio() bool {
 		return false
 	}
 }
+func (gi *GalleryItem) IsResizable() bool {
+	ext := strings.ToLower(filepath.Ext(gi.Filename))
+	switch ext {
+	case ".jpg", ".jpeg", ".png":
+		return true
+
+	default:
+		return false
+	}
+}
 
 func (gi *GalleryItem) GetUrl() string {
 	if gi.IsDir {
 		return strings.Join([]string{"?path=", gi.Path, gi.Filename, "/"}, "")
 	}
 	return strings.Join([]string{"/fs", gi.Path, gi.Filename}, "")
+}
+
+func (gi *GalleryItem) GetResized() string {
+	return strings.Join([]string{"/resize/", "?path=", gi.Path, gi.Filename, "/"}, "")
 }

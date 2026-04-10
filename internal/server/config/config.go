@@ -14,12 +14,15 @@ const (
 	defaultHost        string = "0.0.0.0"
 	galleryDesc        string = "Enables the embedded gallery page. Which currently uses ThinGallery."
 	defaultGalleryFlag bool   = false
+	resizeDesc         string = "Enables the experimental image resizing endpoint"
+	defaultResizeFlag  bool   = false
 )
 
 type Config struct {
 	Port      int
 	Host      string
 	Gallery   bool
+	Resize    bool
 	Directory string
 }
 
@@ -31,10 +34,12 @@ func ParseFromFlags() (*Config, error) {
 	port := flag.Int("port", defaultPort, portDesc)
 	host := flag.String("host", defaultHost, hostDesc)
 	gallery := flag.Bool("gallery", defaultGalleryFlag, galleryDesc)
+	resize := flag.Bool("resize", defaultResizeFlag, resizeDesc)
 	// Define short flags
 	flag.IntVar(port, "p", defaultPort, portDesc)
 	flag.StringVar(host, "h", defaultHost, hostDesc)
 	flag.BoolVar(gallery, "g", defaultGalleryFlag, galleryDesc)
+	flag.BoolVar(resize, "r", defaultResizeFlag, resizeDesc)
 	flag.Parse()
 
 	dirToServe := flag.Arg(0)
@@ -53,5 +58,6 @@ func ParseFromFlags() (*Config, error) {
 		Host:      *host,
 		Directory: dirToServe,
 		Gallery:   *gallery,
+		Resize:    *resize,
 	}, nil
 }
