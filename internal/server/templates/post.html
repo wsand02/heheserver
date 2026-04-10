@@ -1,0 +1,27 @@
+{{ template "header" .}}
+<div class="break-inside-avoid bg-white rounded-2xl shadow-md p-4">
+  {{ if .IsImage }}
+  <img
+    src="{{ .GetPath }}"
+    alt="{{ .Filename }}"
+    loading="lazy"
+    class="w-full rounded-xl mb-3"
+  />
+
+  {{ else if .IsAudio }}
+  <p class="font-medium mb-2 truncate">{{ .Filename }}</p>
+  <audio controls class="w-full">
+    <source src="{{ .GetPath }}" />
+  </audio>
+
+  {{ else if .IsVideo }}
+  <video controls preload="auto" class="w-full rounded-xl mb-3">
+    <source src="{{ .GetPath }}" />
+  </video>
+
+  {{ end }}
+  <a href="{{ .GetPath }}" class="text-blue-600 hover:underline break-all">
+    {{ .Filename }}
+  </a>
+</div>
+{{ template "footer" .}}

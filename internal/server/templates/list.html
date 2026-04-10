@@ -1,62 +1,67 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>heheserver gallery</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  </head>
+{{ template "header" .}}
 
-  <body class="bg-gray-100 text-gray-800">
-    <div class="max-w-6xl mx-auto p-6">
-      <h1 class="text-3xl font-bold mb-6 text-center">heheserver gallery</h1>
+<div class="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
+  {{ range .Items }}
+  <div class="break-inside-avoid bg-white rounded-2xl shadow-md p-4">
+    {{ if .IsImage }}
+    <img
+      {{
+      if
+      and
+      .IsResizable
+      $.Resize
+      }}
+      src="{{ .GetResized }}"
+      {{
+      else
+      }}
+      src="{{ .GetUrl }}"
+      {{
+      end
+      }}
+      alt="{{ .Filename }}"
+      loading="lazy"
+      class="w-full rounded-xl mb-3"
+    />
 
-      <div class="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
-        {{ range .Items }}
-        <div class="break-inside-avoid bg-white rounded-2xl shadow-md p-4">
-          {{ if .IsImage }}
-          <img
-            {{
-            if
-            and
-            .IsResizable
-            $.Resize
-            }}
-            src="{{ .GetResized }}"
-            {{
-            else
-            }}
-            src="{{ .GetUrl }}"
-            {{
-            end
-            }}
-            alt="{{ .Filename }}"
-            loading="lazy"
-            class="w-full rounded-xl mb-3"
-          />
+    {{ else if .IsAudio }}
+    <p class="font-medium mb-2 truncate">{{ .Filename }}</p>
+    <audio controls class="w-full">
+      <source src="{{ .GetUrl }}" />
+    </audio>
 
-          {{ else if .IsAudio }}
-          <p class="font-medium mb-2 truncate">{{ .Filename }}</p>
-          <audio controls class="w-full">
-            <source src="{{ .GetUrl }}" />
-          </audio>
+    {{ else if .IsVideo }}
+    <video controls preload="none" class="w-full rounded-xl mb-3">
+      <source src="{{ .GetUrl }}" />
+    </video>
+    {{ end }} {{ if .IsDir }}
+    <a href="{{ .GetUrl }}" class="text-blue-600 hover:underline break-all">
+      {{ .Filename }}
+    </a>
+    {{ else }}
+    <a
+      href="{{ .GetPostLink }}"
+      class="text-blue-600 hover:underline break-all"
+    >
+      {{ .Filename }}
+    </a>
 
-          {{ else if .IsVideo }}
-          <video controls preload="none" class="w-full rounded-xl mb-3">
-            <source src="{{ .GetUrl }}" />
-          </video>
-
-          {{ else }}
-          <a
-            href="{{ .GetUrl }}"
-            class="text-blue-600 hover:underline break-all"
-          >
-            {{ .Filename }}
-          </a>
-          {{ end }}
-        </div>
-        {{ end }}
-      </div>
-    </div>
-  </body>
-</html>
+    <a
+      class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center"
+      href="{{ .GetUrl }}"
+      download
+    >
+      <svg
+        class="fill-current w-4 h-4 mr-2"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+      >
+        <path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z" />
+      </svg>
+      <span>Download</span>
+    </a>
+    {{ end }}
+  </div>
+  {{ end }}
+</div>
+{{ template "footer" .}}

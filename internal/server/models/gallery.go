@@ -57,6 +57,14 @@ func (gi *GalleryItem) GetUrl() string {
 	return strings.Join([]string{"/fs", gi.Path, gi.Filename}, "")
 }
 
+func (gi *GalleryItem) GetPath() string {
+	return strings.Join([]string{"/fs", gi.Path}, "")
+}
+
+func (gi *GalleryItem) GetPostLink() string {
+	return strings.Join([]string{"/post/", "?path=", gi.Path, gi.Filename, "/"}, "")
+}
+
 func (gi *GalleryItem) GetResized() string {
 	return strings.Join([]string{"/resize/", "?path=", gi.Path, gi.Filename, "/"}, "")
 }
