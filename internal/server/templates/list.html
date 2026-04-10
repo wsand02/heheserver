@@ -18,6 +18,7 @@
           <img
             src="{{ .GetUrl }}"
             alt="{{ .Filename }}"
+            loading="lazy"
             class="w-full rounded-xl mb-3"
           />
 
@@ -28,7 +29,7 @@
           </audio>
 
           {{ else if .IsVideo }}
-          <video controls class="w-full rounded-xl mb-3">
+          <video controls preload="none" class="w-full rounded-xl mb-3">
             <source src="{{ .GetUrl }}" />
           </video>
 
