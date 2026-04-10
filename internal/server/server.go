@@ -26,24 +26,13 @@ func (s *Server) makeHfsInjector(fn func(http.ResponseWriter, *http.Request, str
 	}
 }
 
-func newGallery(cfg *config.Config, mux *http.ServeMux, hfs *fs.HeheFS) *Server {
-	mux.Handle("/fs/", http.StripPrefix("/fs", http.FileServer(hfs)))
-	srv := &Server{
-		mux:    mux,
-		config: cfg,
-		hfs:    hfs,
+func (s *Server) setupRoutes() {
+	if s.config.Gallery {
+		s.mux.Handle("/fs/", http.StripPrefix("/fs", http.FileServer(s.hfs)))
+		s.mux.HandleFunc("/", s.makeHfsInjector(handlers.GalleryHandler))
+		return
 	}
-	srv.mux.HandleFunc("/", srv.makeHfsInjector(handlers.GalleryHandler))
-	return srv
-}
-
-func newFileServer(cfg *config.Config, mux *http.ServeMux, hfs *fs.HeheFS) *Server {
-	mux.Handle("/", http.FileServer(hfs))
-	return &Server{
-		mux:    mux,
-		config: cfg,
-		hfs:    hfs,
-	}
+	s.mux.Handle("/", http.FileServer(s.hfs))
 }
 
 func NewServer(cfg *config.Config) *Server {
@@ -53,11 +42,13 @@ func NewServer(cfg *config.Config) *Server {
 	if !ok {
 		log.Fatal("not hehefs")
 	}
-	if cfg.Gallery {
-		fmt.Println("Gallery Enabled")
-		return newGallery(cfg, mux, hfsa)
+	srv := &Server{
+		config: cfg,
+		mux:    mux,
+		hfs:    hfsa,
 	}
-	return newFileServer(cfg, mux, hfsa)
+	srv.setupRoutes()
+	return srv
 }
 
 func (s *Server) Start() error {
