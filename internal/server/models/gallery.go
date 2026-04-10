@@ -28,7 +28,7 @@ func (gi *GalleryItem) IsImage() bool {
 func (gi *GalleryItem) IsVideo() bool {
 	ext := strings.ToLower(filepath.Ext(gi.Filename))
 	switch ext {
-	case ".mov", ".mp4", ".m4v":
+	case ".mov", ".mp4", ".m4v", ".webm":
 		return true
 	default:
 		return false

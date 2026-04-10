@@ -30,6 +30,7 @@ func (s *Server) setupRoutes() {
 	if s.config.Gallery {
 		s.mux.Handle("/fs/", http.StripPrefix("/fs", http.FileServer(s.hfs)))
 		s.mux.HandleFunc("/", s.makeHfsInjector(handlers.GalleryHandler))
+		s.mux.HandleFunc("/resize/", s.makeHfsInjector(handlers.ResizeHandler))
 		return
 	}
 	s.mux.Handle("/", http.FileServer(s.hfs))
