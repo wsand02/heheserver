@@ -3,11 +3,46 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>heheserver gallery</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   </head>
-  <body>
-    {{ range .Items }}
-    <p><a href="{{ .GetUrl }}">{{ .Filename }}</a></p>
-    {{ end }}
+
+  <body class="bg-gray-100 text-gray-800">
+    <div class="max-w-6xl mx-auto p-6">
+      <h1 class="text-3xl font-bold mb-6 text-center">heheserver gallery</h1>
+
+      <div class="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
+        {{ range .Items }}
+        <div class="break-inside-avoid bg-white rounded-2xl shadow-md p-4">
+          {{ if .IsImage }}
+          <img
+            src="{{ .GetUrl }}"
+            alt="{{ .Filename }}"
+            class="w-full rounded-xl mb-3"
+          />
+
+          {{ else if .IsAudio }}
+          <p class="font-medium mb-2 truncate">{{ .Filename }}</p>
+          <audio controls class="w-full">
+            <source src="{{ .GetUrl }}" />
+          </audio>
+
+          {{ else if .IsVideo }}
+          <video controls class="w-full rounded-xl mb-3">
+            <source src="{{ .GetUrl }}" />
+          </video>
+
+          {{ else }}
+          <a
+            href="{{ .GetUrl }}"
+            class="text-blue-600 hover:underline break-all"
+          >
+            {{ .Filename }}
+          </a>
+          {{ end }}
+        </div>
+        {{ end }}
+      </div>
+    </div>
   </body>
 </html>
