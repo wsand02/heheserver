@@ -1,27 +1,50 @@
-{{ template "header" .}}
-<div class="break-inside-avoid bg-white rounded-2xl shadow-md p-4">
-  {{ if .IsImage }}
-  <img
-    src="{{ .GetPath }}"
-    alt="{{ .Filename }}"
-    loading="lazy"
-    class="w-full rounded-xl mb-3"
-  />
+{{ template "header" . }}
+<div class="max-w-4xl mx-auto">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+    {{ if .IsImage }}
+    <div class="relative bg-black flex justify-center items-center">
+      <img
+        src="{{ .GetPath }}"
+        alt="{{ .Filename }}"
+        loading="lazy"
+        class="w-full object-contain"
+      />
+    </div>
+    {{ else if .IsAudio }}
+    <div class="p-6">
+      <p class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
+        {{ .Filename }}
+      </p>
+      <audio controls class="w-full">
+        <source src="{{ .GetPath }}" />
+      </audio>
+    </div>
+    {{ else if .IsVideo }}
+    <video controls preload="auto" class="w-full bg-black" poster="">
+      <source src="{{ .GetPath }}" />
+    </video>
+    {{ end }}
 
-  {{ else if .IsAudio }}
-  <p class="font-medium mb-2 truncate">{{ .Filename }}</p>
-  <audio controls class="w-full">
-    <source src="{{ .GetPath }}" />
-  </audio>
-
-  {{ else if .IsVideo }}
-  <video controls preload="auto" class="w-full rounded-xl mb-3">
-    <source src="{{ .GetPath }}" />
-  </video>
-
-  {{ end }}
-  <a href="{{ .GetPath }}" class="text-blue-600 hover:underline break-all">
-    {{ .Filename }}
-  </a>
+    <div
+      class="p-6 flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 dark:border-gray-700"
+    >
+      <a
+        href="{{ .GetPath }}"
+        class="text-blue-600 dark:text-blue-400 hover:underline break-all text-lg font-medium"
+      >
+        {{ .Filename }}
+      </a>
+      <a
+        href="{{ .GetPath }}"
+        download
+        class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors shadow-sm"
+      >
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z" />
+        </svg>
+        Download
+      </a>
+    </div>
+  </div>
 </div>
-{{ template "footer" .}}
+{{ template "footer" . }}

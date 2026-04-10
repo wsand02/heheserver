@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/wsand02/heheserver/internal/fs"
 	"github.com/wsand02/heheserver/internal/server/config"
@@ -12,6 +13,24 @@ import (
 type GalleryContext struct {
 	Items  []models.GalleryItem
 	Resize bool
+	Path   string
+}
+
+type Breadcrumb struct {
+}
+
+func (gc *GalleryContext) GetBreadcrumbs() []string {
+	return strings.Split(gc.Path, "/")
+
+}
+
+func (gc *GalleryContext) BreadcrumbToUrl(i int) string {
+	crumbs := gc.GetBreadcrumbs()[1 : i+1]
+	pcrumbs := []string{"?path="}
+	pcrumbs = append(pcrumbs, crumbs...)
+	url := strings.Join(pcrumbs, "/")
+	urla := strings.Join([]string{url, "/"}, "")
+	return urla
 }
 
 func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
@@ -31,8 +50,9 @@ func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.
 		gc.Items = append(gc.Items, models.GalleryItem{Filename: dirlis[i].Name(), IsDir: dirlis[i].IsDir(), Path: ctx})
 	}
 	gc.Resize = config.Resize
+	gc.Path = ctx
 
-	templates.RenderTemplate(w, "list", gc)
+	templates.RenderTemplate(w, "list", &gc)
 }
 
 type PostContext struct {
