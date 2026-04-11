@@ -44,10 +44,9 @@ func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	var gc GalleryContext
-	for i := 0; i < len(dirlis); i++ {
-		gc.Items = append(gc.Items, models.GalleryItem{Filename: dirlis[i].Name(), IsDir: dirlis[i].IsDir(), Path: ctx})
+	for _, item := range dirlis {
+		gc.Items = append(gc.Items, models.GalleryItem{Filename: item.Name(), IsDir: item.IsDir(), Size: item.Size(), ModTime: item.ModTime(), Path: ctx})
 	}
 	gc.Resize = config.Resize
 	gc.Path = ctx
@@ -62,7 +61,7 @@ type PostContext struct {
 func PostHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
 	hf, err := hfs.Open(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError) // might leak path but for the intended deployment scenario, does not matter
 		return
 	}
 	hfstat, err := hf.Stat()
@@ -74,5 +73,5 @@ func PostHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.Heh
 		http.Error(w, "This is a directory", http.StatusUnsupportedMediaType)
 		return
 	}
-	templates.RenderTemplate(w, "post", &PostContext{models.GalleryItem{Filename: hfstat.Name(), IsDir: hfstat.IsDir(), Path: ctx}}) // oh well
+	templates.RenderTemplate(w, "post", &PostContext{models.GalleryItem{Filename: hfstat.Name(), IsDir: hfstat.IsDir(), Path: ctx, Size: hfstat.Size(), ModTime: hfstat.ModTime()}}) // oh well
 }

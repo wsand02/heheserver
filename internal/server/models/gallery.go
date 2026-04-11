@@ -1,14 +1,23 @@
 package models
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type GalleryItem struct {
 	Filename string
 	IsDir    bool
 	Path     string
+	Size     int64
+	ModTime  time.Time
+}
+
+func (gi *GalleryItem) SizeMB() float64 {
+	fmt.Println(gi.Size)
+	return float64(gi.Size) / 1000000
 }
 
 func (gi *GalleryItem) IsImage() bool {

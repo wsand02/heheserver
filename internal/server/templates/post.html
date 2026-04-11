@@ -1,50 +1,148 @@
 {{ template "header" . }}
+
 <div class="max-w-4xl mx-auto">
+  <!-- Back navigation (simple & elegant) -->
+  <div class="mb-4">
+    <a
+      href="javascript:history.back()"
+      class="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline text-sm"
+    >
+      <svg
+        class="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M10 19l-7-7m0 0l7-7m-7 7h18"
+        />
+      </svg>
+      Back to gallery
+    </a>
+  </div>
+
+  <!-- Main card -->
   <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+    <!-- Media area -->
     {{ if .IsImage }}
-    <div class="relative bg-black flex justify-center items-center">
+    <div
+      class="relative bg-black flex justify-center items-center min-h-[300px]"
+    >
       <img
         src="{{ .GetPath }}"
         alt="{{ .Filename }}"
         loading="lazy"
-        class="w-full object-contain"
+        class="w-full max-h-[70vh] object-contain"
       />
     </div>
     {{ else if .IsAudio }}
-    <div class="p-6">
-      <p class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
-        {{ .Filename }}
-      </p>
+    <div class="p-6 sm:p-8">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
+          <svg
+            class="w-8 h-8 text-blue-600 dark:text-blue-400"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+            />
+          </svg>
+        </div>
+        <div>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Audio file</p>
+          <p
+            class="text-xl font-semibold text-gray-800 dark:text-gray-200 truncate"
+          >
+            {{ .Filename }}
+          </p>
+        </div>
+      </div>
       <audio controls class="w-full">
         <source src="{{ .GetPath }}" />
+        Your browser does not support the audio element.
       </audio>
     </div>
     {{ else if .IsVideo }}
-    <video controls preload="auto" class="w-full bg-black" poster="">
+    <video
+      controls
+      preload="metadata"
+      class="w-full max-h-[70vh] bg-black"
+      poster=""
+    >
       <source src="{{ .GetPath }}" />
+      Your browser does not support the video tag.
     </video>
+    {{ else }}
+    <!-- Fallback for unknown file types -->
+    <div class="p-8 text-center">
+      <svg
+        class="w-16 h-16 mx-auto text-gray-400 mb-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1.5"
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        />
+      </svg>
+      <p class="text-gray-600 dark:text-gray-400">
+        This file type cannot be previewed directly.
+      </p>
+    </div>
     {{ end }}
 
-    <div
-      class="p-6 flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 dark:border-gray-700"
-    >
-      <a
-        href="{{ .GetPath }}"
-        class="text-blue-600 dark:text-blue-400 hover:underline break-all text-lg font-medium"
+    <!-- File info & actions -->
+    <div class="p-6 sm:p-8 border-t border-gray-100 dark:border-gray-700">
+      <div
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
       >
-        {{ .Filename }}
-      </a>
-      <a
-        href="{{ .GetPath }}"
-        download
-        class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors shadow-sm"
+        <div class="flex-1 min-w-0">
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white break-all">
+            {{ .Filename }}
+          </h2>
+          {{ if or .Size .ModTime }}
+          <div
+            class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400"
+          >
+            {{ if .Size }}<span>📦 {{ .SizeMB }} MB</span>{{ end }} {{ if
+            .ModTime }}<span>📅 {{ .ModTime }}</span>{{ end }}
+          </div>
+          {{ end }}
+        </div>
+        <div class="flex-shrink-0">
+          <a
+            href="{{ .GetPath }}"
+            download
+            class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-2.5 px-6 rounded-xl transition-all shadow-md hover:shadow-lg"
+          >
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z" />
+            </svg>
+            Download
+          </a>
+        </div>
+      </div>
+
+      <!-- Optional: direct link to raw file -->
+      <div
+        class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 text-xs"
       >
-        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z" />
-        </svg>
-        Download
-      </a>
+        <span class="text-gray-400">Raw link:</span>
+        <a
+          href="{{ .GetPath }}"
+          class="text-blue-500 hover:underline break-all ml-2"
+          >{{ .GetPath }}</a
+        >
+      </div>
     </div>
   </div>
 </div>
+
 {{ template "footer" . }}
