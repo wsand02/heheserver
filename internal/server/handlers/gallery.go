@@ -16,9 +16,6 @@ type GalleryContext struct {
 	Path   string
 }
 
-type Breadcrumb struct {
-}
-
 func (gc *GalleryContext) GetBreadcrumbs() []string {
 	return strings.Split(gc.Path, "/")
 
@@ -39,6 +36,7 @@ func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	defer hf.Close()
 	dirlis, err := hf.Readdir(-1)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -64,6 +62,7 @@ func PostHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.Heh
 		http.Error(w, err.Error(), http.StatusInternalServerError) // might leak path but for the intended deployment scenario, does not matter
 		return
 	}
+	defer hf.Close()
 	hfstat, err := hf.Stat()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

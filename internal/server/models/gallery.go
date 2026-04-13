@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
@@ -16,7 +15,6 @@ type GalleryItem struct {
 }
 
 func (gi *GalleryItem) SizeMB() float64 {
-	fmt.Println(gi.Size)
 	return float64(gi.Size) / 1000000
 }
 
@@ -71,9 +69,9 @@ func (gi *GalleryItem) GetPath() string {
 }
 
 func (gi *GalleryItem) GetPostLink() string {
-	return strings.Join([]string{"/post/", "?path=", gi.Path, gi.Filename, "/"}, "")
+	return strings.Join([]string{"/post/", "?path=", gi.Path, gi.Filename}, "")
 }
 
 func (gi *GalleryItem) GetResized() string {
-	return strings.Join([]string{"/resize/", "?path=", gi.Path, gi.Filename, "/"}, "")
+	return strings.Join([]string{"/resize/", "?path=", gi.Path, gi.Filename}, "")
 }
