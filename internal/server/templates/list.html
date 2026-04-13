@@ -14,7 +14,7 @@
 >
   {{ range .Items }}
   <div
-    class="group bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col"
+    class="group bg-white dark:bg-gray-800 {{ if .IsImage}} row-span-4 {{ else if .IsVideo }} row-span-4 {{ else if .IsAudio }} row-span-2 {{ else }} row-span-1 {{ end }} rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col"
   >
     {{ if .IsImage }}
     <div class="relative aspect-video bg-gray-100 dark:bg-gray-700">
@@ -40,10 +40,7 @@
     </div>
     {{ else if .IsAudio }}
     <div class="p-4">
-      <p class="font-medium truncate text-gray-800 dark:text-gray-200">
-        {{ .Filename }}
-      </p>
-      <audio controls class="w-full mt-2 rounded-md">
+      <audio controls class="w-full rounded-md">
         <source src="{{ .GetUrl }}" />
       </audio>
     </div>
@@ -63,7 +60,7 @@
       {{ if .IsDir }}
       <a
         href="{{ .GetUrl }}"
-        class="inline-flex self-center items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline font-medium break-all"
+        class="inline-flex my-2 self-center items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline font-medium break-all"
       >
         <svg
           class="w-5 h-5 flex-shrink-0"
@@ -83,7 +80,7 @@
       {{ else }}
       <a
         href="{{ .GetPostLink }}"
-        class="text-blue-600 dark:text-blue-400 hover:underline break-all font-medium"
+        class="text-blue-600 dark:text-blue-400 whitespace-nowrap overflow-hidden ellipsis hover:underline break-all font-medium"
       >
         {{ .Filename }}
       </a>
