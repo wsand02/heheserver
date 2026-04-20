@@ -29,11 +29,11 @@ type ResizeCacheItem struct {
 }
 
 type ResizeCache struct {
-	*ristretto.Cache[string, *ResizeCacheItem]
+	*ristretto.Cache[string, ResizeCacheItem]
 }
 
 func NewResizeCache() (*ResizeCache, error) {
-	cache, err := ristretto.NewCache(&ristretto.Config[string, *ResizeCacheItem]{
+	cache, err := ristretto.NewCache(&ristretto.Config[string, ResizeCacheItem]{
 		NumCounters: 1e7,     // 10M
 		MaxCost:     1 << 30, // 1GB
 		BufferItems: 64,
@@ -42,4 +42,20 @@ func NewResizeCache() (*ResizeCache, error) {
 		return nil, err
 	}
 	return &ResizeCache{cache}, nil
+}
+
+type VidThumbCache struct {
+	*ristretto.Cache[string, image.Image]
+}
+
+func NewVidThumbCache() (*VidThumbCache, error) {
+	cache, err := ristretto.NewCache(&ristretto.Config[string, image.Image]{
+		NumCounters: 1e7,     // 10M
+		MaxCost:     1 << 30, // 1GB
+		BufferItems: 64,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &VidThumbCache{cache}, nil
 }

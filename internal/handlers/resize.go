@@ -87,7 +87,7 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.H
 	// fmt.Print(": ")
 	// fmt.Println(cost)
 
-	resizeCache.Set(ctx, &cache.ResizeCacheItem{
+	resizeCache.Set(ctx, cache.ResizeCacheItem{
 		Image:       dst,
 		Transparent: transparent,
 	}, cost)

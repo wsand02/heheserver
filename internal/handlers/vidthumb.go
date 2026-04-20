@@ -8,10 +8,13 @@ import (
 	"path/filepath"
 
 	"github.com/h2non/filetype"
+	"github.com/wsand02/heheserver/internal/cache"
 	"github.com/wsand02/heheserver/internal/config"
 	"github.com/wsand02/heheserver/internal/fs"
 	"github.com/wsand02/heheserver/internal/vidthumb"
 )
+
+var vidThumbCache *cache.VidThumbCache
 
 func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
 	hf, err := hfs.Open(ctx)
@@ -20,6 +23,22 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 		return
 	}
 	defer hf.Close()
+	if vidThumbCache == nil {
+		vTC, err := cache.NewVidThumbCache()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		vidThumbCache = vTC
+	}
+	vtb, ok := vidThumbCache.Get(ctx)
+	if ok {
+		err = jpeg.Encode(w, vtb, nil)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		return
+	}
 	head := make([]byte, 512)
 	hf.Read(head)
 	if !filetype.IsVideo(head) {
@@ -52,5 +71,10 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	jpeg.Encode(w, img, nil)
+	vidThumbCache.Set(ctx, img, int64(img.Bounds().Dx()*img.Bounds().Dy()))
+	err = jpeg.Encode(w, img, nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
