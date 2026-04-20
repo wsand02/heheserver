@@ -35,6 +35,7 @@ func (s *Server) setupRoutes() {
 		if s.config.Resize {
 			fmt.Println("Enabling Resize Endpoint")
 			s.mux.HandleFunc("/resize/", s.makeHfsInjector(handlers.ResizeHandler))
+			s.mux.HandleFunc("/vidthumb/", s.makeHfsInjector(handlers.VidThumbHandler))
 		}
 
 		return

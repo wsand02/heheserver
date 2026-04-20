@@ -48,6 +48,14 @@
     <video
       controls
       preload="none"
+      loading="lazy"
+      {{
+      if
+      $.Resize
+      }}
+      poster="{{ .GetVidThumb }}"
+      {{end
+      }}
       class="w-full aspect-video object-cover rounded-t-xl bg-black"
     >
       <source src="{{ .GetUrl }}" />

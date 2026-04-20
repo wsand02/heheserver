@@ -34,8 +34,8 @@ type ResizeCache struct {
 
 func NewResizeCache() (*ResizeCache, error) {
 	cache, err := ristretto.NewCache(&ristretto.Config[string, *ResizeCacheItem]{
-		NumCounters: 1e7,
-		MaxCost:     1 << 30,
+		NumCounters: 1e7,     // 10M
+		MaxCost:     1 << 30, // 1GB
 		BufferItems: 64,
 	})
 	if err != nil {

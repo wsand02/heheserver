@@ -75,3 +75,7 @@ func (gi *GalleryItem) GetPostLink() string {
 func (gi *GalleryItem) GetResized() string {
 	return strings.Join([]string{"/resize/", "?path=", gi.Path, gi.Filename}, "")
 }
+
+func (gi *GalleryItem) GetVidThumb() string {
+	return strings.Join([]string{"/vidthumb/", "?path=", gi.Path, gi.Filename}, "")
+}
