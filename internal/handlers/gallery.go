@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/wsand02/heheserver/internal/config"
 	"github.com/wsand02/heheserver/internal/fs"
-	"github.com/wsand02/heheserver/internal/server/config"
-	"github.com/wsand02/heheserver/internal/server/models"
-	"github.com/wsand02/heheserver/internal/server/templates"
+	"github.com/wsand02/heheserver/internal/models"
+	"github.com/wsand02/heheserver/internal/templates"
 )
 
 type GalleryContext struct {

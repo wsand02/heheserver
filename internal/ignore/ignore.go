@@ -1,30 +1,34 @@
 package ignore
 
 import (
+	"log"
 	"path/filepath"
 	"slices"
-	"sync"
 
 	ignore "github.com/wsand02/go-gitignore"
+	"github.com/wsand02/heheserver/internal/cache"
 )
 
-var (
-	ignoreCache = map[string]*ignore.GitIgnore{}
-	cacheMu     sync.RWMutex
-)
+var ignoreCache *cache.IgnoreCache
 
 // getIgnoreForPath returns a slice of ignore rules for the specified path,
 // recursively traverses from root to the path appending all rules along the way.
 func GetIgnoreForPath(root, path string) []*ignore.GitIgnore {
+	if ignoreCache == nil {
+		iC, err := cache.NewIgnoreCache()
+		if err != nil {
+			log.Fatal(err)
+		}
+		ignoreCache = iC
+	}
 	root = filepath.Clean(root)
 	dir := filepath.Clean(path)
 
 	var rules []*ignore.GitIgnore
 
 	for {
-		cacheMu.RLock()
-		ig, ok := ignoreCache[dir]
-		cacheMu.RUnlock()
+
+		ig, ok := ignoreCache.Get(dir)
 
 		if !ok {
 			var err error
@@ -32,10 +36,7 @@ func GetIgnoreForPath(root, path string) []*ignore.GitIgnore {
 			if err != nil {
 				ig = nil
 			}
-
-			cacheMu.Lock()
-			ignoreCache[dir] = ig
-			cacheMu.Unlock()
+			ignoreCache.Set(dir, ig, 1)
 		}
 
 		if ig != nil {

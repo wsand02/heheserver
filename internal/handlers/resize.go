@@ -7,23 +7,15 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
-	"sync"
 
+	"github.com/wsand02/heheserver/internal/cache"
+	"github.com/wsand02/heheserver/internal/config"
 	"github.com/wsand02/heheserver/internal/fs"
 	"github.com/wsand02/heheserver/internal/resize"
-	"github.com/wsand02/heheserver/internal/server/config"
 )
-
-type resizeCacheItem struct {
-	image.Image
-	transparent bool
-}
 
 // since the thumbnails are so small we can just cache them in memory
-var (
-	resizeCache = map[string]*resizeCacheItem{}
-	cacheMu     sync.RWMutex
-)
+var resizeCache *cache.ResizeCache
 
 func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
 	hf, err := hfs.Open(ctx)
@@ -37,12 +29,17 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.H
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	cacheMu.RLock()
-	cImg, ok := resizeCache[ctx]
-	cacheMu.RUnlock()
+	if resizeCache == nil {
+		rC, err := cache.NewResizeCache()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		resizeCache = rC
+	}
+	cImg, ok := resizeCache.Get(ctx)
 	w.Header().Add("Cache-Control", "private, max-age=86400")
 	if ok {
-		if cImg.transparent {
+		if cImg.Transparent {
 			err = png.Encode(w, cImg.Image)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -88,12 +85,15 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.H
 		http.Error(w, "Invalid file", http.StatusUnsupportedMediaType)
 		return
 	}
-	cacheMu.Lock()
-	resizeCache[ctx] = &resizeCacheItem{
-		dst,
-		transparent,
-	}
-	cacheMu.Unlock()
+	cost := int64(dst.Bounds().Dx() * dst.Bounds().Dy())
+	// fmt.Print(ctx)
+	// fmt.Print(": ")
+	// fmt.Println(cost)
+
+	resizeCache.Set(ctx, &cache.ResizeCacheItem{
+		Image:       dst,
+		Transparent: transparent,
+	}, cost)
 	if transparent {
 		err = png.Encode(w, dst)
 		if err != nil {

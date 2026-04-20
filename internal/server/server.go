@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/wsand02/heheserver/internal/config"
 	"github.com/wsand02/heheserver/internal/fs"
-	"github.com/wsand02/heheserver/internal/server/config"
-	"github.com/wsand02/heheserver/internal/server/handlers"
+	"github.com/wsand02/heheserver/internal/handlers"
 )
 
 type Server struct {
