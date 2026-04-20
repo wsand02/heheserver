@@ -11,6 +11,7 @@ import (
 	"github.com/wsand02/heheserver/internal/cache"
 	"github.com/wsand02/heheserver/internal/config"
 	"github.com/wsand02/heheserver/internal/fs"
+	"github.com/wsand02/heheserver/internal/utils"
 	"github.com/wsand02/heheserver/internal/vidthumb"
 )
 
@@ -71,7 +72,7 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	vidThumbCache.Set(ctx, img, int64(img.Bounds().Dx()*img.Bounds().Dy()))
+	vidThumbCache.Set(ctx, img, utils.GetCost(img))
 	err = jpeg.Encode(w, img, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
