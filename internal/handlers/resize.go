@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"image"
+	"fmt"
 	"image/jpeg"
 	"image/png"
-	"io"
 	"net/http"
+	"path/filepath"
 
 	"github.com/h2non/filetype"
 	"github.com/wsand02/heheserver/internal/cache"
@@ -19,12 +19,6 @@ import (
 var resizeCache *cache.ResizeCache
 
 func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
-	hf, err := hfs.Open(ctx)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer hf.Close()
 	if resizeCache == nil {
 		rC, err := cache.NewResizeCache()
 		if err != nil {
@@ -32,73 +26,53 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.H
 		}
 		resizeCache = rC
 	}
+
 	cImg, ok := resizeCache.Get(ctx)
 	w.Header().Add("Cache-Control", "private, max-age=86400")
 	if ok {
 		if cImg.Transparent {
-			err = png.Encode(w, cImg.Image)
+			err := png.Encode(w, cImg.Image)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			return
 		}
-		err = jpeg.Encode(w, cImg.Image, nil)
+		err := jpeg.Encode(w, cImg.Image, nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		return
-	}
-	var src image.Image
-	var transparent bool
-	head := make([]byte, 512)
-	hf.Read(head)
-	hf.Seek(0, io.SeekStart)
-	if filetype.IsMIME(head, "image/jpeg") {
-		src, err = jpeg.Decode(hf)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		transparent = false
-	} else if filetype.IsMIME(head, "image/png") {
-		src, err = png.Decode(hf)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		transparent = true
-	} else {
-		http.Error(w, "Invalid file", http.StatusUnsupportedMediaType)
 		return
 	}
 
-	if src == nil {
-		http.Error(w, "Invalid file", http.StatusUnsupportedMediaType)
+	hf, err := hfs.Open(ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	dst := resize.ResizeImage(src)
-	if dst == nil {
-		http.Error(w, "Invalid file", http.StatusUnsupportedMediaType)
+	defer hf.Close()
+
+	var transparent bool
+	head := make([]byte, 512)
+	hf.Read(head)
+	if !filetype.IsImage(head) {
+		http.Error(w, "Not an image", http.StatusUnsupportedMediaType)
 		return
 	}
-	// fmt.Print(ctx)
-	// fmt.Print(": ")
-	// fmt.Println(cost)
+
+	fullName := filepath.Join(hfs.Root, ctx)
+	fmt.Println(fullName)
+	dst, err := resize.ResizeImage(fullName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	resizeCache.Set(ctx, cache.ResizeCacheItem{
 		Image:       dst,
 		Transparent: transparent,
 	}, utils.GetCost(dst))
-	if transparent {
-		err = png.Encode(w, dst)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		return
-	}
 	err = jpeg.Encode(w, dst, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

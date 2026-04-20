@@ -1,20 +1,27 @@
 package resize
 
 import (
+	"bytes"
 	"image"
-
-	"golang.org/x/image/draw"
+	"log"
+	"os/exec"
 )
 
-const width int = 250
+func ResizeImage(path string) (image.Image, error) {
+	cmd := exec.Command("ffmpeg", "-i", path, "-vf", "scale=300:-2", "-f", "image2pipe", "-")
 
-func ResizeImage(img image.Image) *image.RGBA {
-	if img.Bounds().Dx() == 0 || img.Bounds().Dy() == 0 {
-		return nil
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		return nil, err
 	}
-	ratio := float64(img.Bounds().Dx()) / float64(img.Bounds().Dy())
-	targetHeight := int(float64(width) / ratio)
-	dst := image.NewRGBA(image.Rect(0, 0, width, targetHeight))
-	draw.BiLinear.Scale(dst, dst.Rect, img, img.Bounds(), draw.Over, nil)
-	return dst
+	img, _, err := image.Decode(&out)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return img, nil
 }
