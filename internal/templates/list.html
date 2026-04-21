@@ -107,4 +107,101 @@
   </div>
   {{ end }}
 </div>
-{{ template "footer" . }}
+{{ if gt .MaxPage 1 }}
+<div class="flex justify-center mt-8">
+  <nav class="flex items-center gap-1" aria-label="Pagination">
+    <!-- Previous -->
+    {{ if gt .CurrentPage 1 }}
+    <a
+      href="{{ pageURL .Path (sub .CurrentPage 1) }}"
+      class="px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+      aria-label="Previous"
+    >
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path
+          fill-rule="evenodd"
+          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </a>
+    {{ else }}
+    <span
+      class="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
+      aria-disabled="true"
+    >
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path
+          fill-rule="evenodd"
+          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </span>
+    {{ end }}
+
+    <!-- Page numbers (range logic) -->
+    {{ $currentPage := .CurrentPage }} {{ $maxPage := .MaxPage }} {{ $start :=
+    sub $currentPage 2 }} {{ $end := add $currentPage 2 }} {{ if lt $start 1
+    }}{{ $start = 1 }}{{ end }} {{ if gt $end $maxPage }}{{ $end = $maxPage }}{{
+    end }} {{ if gt $start 2 }}
+    <a
+      href="{{ pageURL .Path 1 }}"
+      class="px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+      >1</a
+    >
+    {{ if gt $start 3 }}<span class="px-2 text-gray-500 dark:text-gray-400"
+      >...</span
+    >{{ end }} {{ end }} {{ range $i := seq $start $end }} {{ if eq $i
+    $currentPage }}
+    <span class="px-3 py-2 rounded-lg bg-blue-600 text-white font-semibold"
+      >{{ $i }}</span
+    >
+    {{ else }}
+    <a
+      href="{{ pageURL $.Path $i }}"
+      class="px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+      >{{ $i }}</a
+    >
+    {{ end }} {{ end }} {{ if lt $end (sub $maxPage 1) }} {{ if lt $end (sub
+    $maxPage 2) }}<span class="px-2 text-gray-500 dark:text-gray-400">...</span
+    >{{ end }}
+    <a
+      href="{{ pageURL .Path $maxPage }}"
+      class="px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+      >{{ $maxPage }}</a
+    >
+    {{ end }}
+
+    <!-- Next -->
+    {{ if lt .CurrentPage .MaxPage }}
+    <a
+      href="{{ pageURL .Path (add .CurrentPage 1) }}"
+      class="px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+      aria-label="Next"
+    >
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path
+          fill-rule="evenodd"
+          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </a>
+    {{ else }}
+    <span
+      class="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
+      aria-disabled="true"
+    >
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path
+          fill-rule="evenodd"
+          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </span>
+    {{ end }}
+  </nav>
+</div>
+{{ end }} {{ template "footer" . }}

@@ -2,7 +2,10 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
+
+	iofs "io/fs"
 
 	"github.com/wsand02/heheserver/internal/config"
 	"github.com/wsand02/heheserver/internal/fs"
@@ -11,9 +14,11 @@ import (
 )
 
 type GalleryContext struct {
-	Items  []models.GalleryItem
-	Resize bool
-	Path   string
+	Items       []models.GalleryItem
+	Resize      bool
+	Path        string
+	CurrentPage int
+	MaxPage     int
 }
 
 func (gc *GalleryContext) GetBreadcrumbs() []string {
@@ -42,12 +47,32 @@ func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	var divided [][]iofs.FileInfo
+	for i := 0; i < len(dirlis); i += 12 {
+		divided = append(divided, dirlis[i:min(i+12, len(dirlis))])
+	}
+	q := r.URL.Query().Get("p")
+	if q == "" {
+		q = "1"
+	}
+	pid, err := strconv.Atoi(q)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	pid -= 1
+	if pid > len(divided) || pid < 0 {
+		http.Error(w, "p out of range", http.StatusBadRequest)
+		return
+	}
 	var gc GalleryContext
-	for _, item := range dirlis {
+	for _, item := range divided[pid] {
 		gc.Items = append(gc.Items, models.GalleryItem{Filename: item.Name(), IsDir: item.IsDir(), Size: item.Size(), ModTime: item.ModTime(), Path: ctx})
 	}
 	gc.Resize = config.Resize
 	gc.Path = ctx
+	gc.CurrentPage = pid + 1
+	gc.MaxPage = len(divided)
 
 	templates.RenderTemplate(w, "list", &gc)
 }
