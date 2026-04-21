@@ -28,15 +28,10 @@ func setupTestDir(t *testing.T) string {
 }
 
 func testServer(t *testing.T, dir string, gallery, resize bool) *httptest.Server {
-	cfg := &config.Config{
-		Directory: dir,
-		Gallery:   gallery,
-		Resize:    resize,
-		Host:      "localhost",
-		Port:      0, // will be overridden by httptest
-		Split:     64,
+	cfg, err := config.NewConfig(0, 64, gallery, resize, dir, "localhost")
+	if err != nil {
+		t.Fatal(err.Error())
 	}
-
 	srv := NewServer(cfg)
 	ts := httptest.NewServer(srv.mux) // or srv.Start() but httptest is easier
 	t.Cleanup(ts.Close)
