@@ -34,6 +34,7 @@ func testServer(t *testing.T, dir string, gallery, resize bool) *httptest.Server
 		Resize:    resize,
 		Host:      "localhost",
 		Port:      0, // will be overridden by httptest
+		Split:     64,
 	}
 
 	srv := NewServer(cfg)
