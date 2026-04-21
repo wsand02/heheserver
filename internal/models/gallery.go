@@ -14,6 +14,7 @@ type GalleryItem struct {
 	ModTime  time.Time
 }
 
+// SizeMB returns the size as Megabytes NOT MEBIBYTESDSDKFJK MAYBE MY:......
 func (gi *GalleryItem) SizeMB() float64 {
 	return float64(gi.Size) / 1000000
 }
