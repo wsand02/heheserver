@@ -11,7 +11,7 @@ import (
 	"github.com/wsand02/heheserver/internal/config"
 )
 
-func setupTestDir(t *testing.T) (string, func()) {
+func setupTestDir(t *testing.T) string {
 	tmpDir := t.TempDir() // automatically cleaned up at end of test
 
 	// Create sample files
@@ -24,7 +24,7 @@ func setupTestDir(t *testing.T) (string, func()) {
 		t.Fatal(err.Error())
 	}
 
-	return tmpDir, func() { /* no-op, t.TempDir cleans up */ }
+	return tmpDir
 }
 
 func testServer(t *testing.T, dir string, gallery, resize bool) *httptest.Server {
@@ -43,8 +43,7 @@ func testServer(t *testing.T, dir string, gallery, resize bool) *httptest.Server
 }
 
 func TestFileServerMode(t *testing.T) {
-	dir, cleanup := setupTestDir(t)
-	defer cleanup()
+	dir := setupTestDir(t)
 
 	ts := testServer(t, dir, false, false)
 	client := ts.Client()
@@ -70,8 +69,7 @@ func TestFileServerMode(t *testing.T) {
 }
 
 func TestGalleryServerMode(t *testing.T) {
-	dir, cleanup := setupTestDir(t)
-	defer cleanup()
+	dir := setupTestDir(t)
 
 	ts := testServer(t, dir, true, false)
 	client := ts.Client()
