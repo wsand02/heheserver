@@ -66,6 +66,9 @@ func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.
 		return
 	}
 	var gc GalleryContext
+	if len(divided) == 0 {
+		divided = append(divided, dirlis)
+	}
 	for _, item := range divided[pid] {
 		gc.Items = append(gc.Items, models.GalleryItem{Filename: item.Name(), IsDir: item.IsDir(), Size: item.Size(), ModTime: item.ModTime(), Path: ctx})
 	}
