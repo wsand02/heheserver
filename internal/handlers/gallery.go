@@ -48,8 +48,8 @@ func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.
 		return
 	}
 	var divided [][]iofs.FileInfo
-	for i := 0; i < len(dirlis); i += 12 {
-		divided = append(divided, dirlis[i:min(i+12, len(dirlis))])
+	for i := 0; i < len(dirlis); i += config.Split {
+		divided = append(divided, dirlis[i:min(i+config.Split, len(dirlis))])
 	}
 	q := r.URL.Query().Get("p")
 	if q == "" {

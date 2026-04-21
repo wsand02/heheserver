@@ -12,9 +12,11 @@ const (
 	defaultPort        int    = 3400
 	defaultDir         string = "./"
 	defaultHost        string = "0.0.0.0"
-	galleryDesc        string = "Enables the embedded gallery page. Which currently uses ThinGallery."
+	galleryDesc        string = "Enables the embedded gallery page."
 	defaultGalleryFlag bool   = false
-	resizeDesc         string = "Enables the experimental image resizing endpoint"
+	resizeDesc         string = "Enables the experimental image resizing endpoint, requires ffmpeg on path."
+	defaultSplit       int    = 64
+	splitDesc          string = "Max items per page for gallery pagination."
 	defaultResizeFlag  bool   = false
 )
 
@@ -24,6 +26,7 @@ type Config struct {
 	Gallery   bool
 	Resize    bool
 	Directory string
+	Split     int
 }
 
 func (c *Config) GetAddress() string {
@@ -35,9 +38,11 @@ func ParseFromFlags() (*Config, error) {
 	host := flag.String("host", defaultHost, hostDesc)
 	gallery := flag.Bool("gallery", defaultGalleryFlag, galleryDesc)
 	resize := flag.Bool("resize", defaultResizeFlag, resizeDesc)
+	split := flag.Int("split", defaultSplit, splitDesc)
 	// Define short flags
 	flag.IntVar(port, "p", defaultPort, portDesc)
 	flag.StringVar(host, "h", defaultHost, hostDesc)
+	flag.IntVar(split, "s", defaultSplit, splitDesc)
 	flag.BoolVar(gallery, "g", defaultGalleryFlag, galleryDesc)
 	flag.BoolVar(resize, "r", defaultResizeFlag, resizeDesc)
 	flag.Parse()
@@ -45,6 +50,10 @@ func ParseFromFlags() (*Config, error) {
 	dirToServe := flag.Arg(0)
 	if len(dirToServe) == 0 {
 		dirToServe = defaultDir
+	}
+
+	if *split < 1 {
+		return nil, fmt.Errorf("Split has to be greater than 0")
 	}
 
 	// prevents infinite loop incase i accidentally add a slash to directory on windows
@@ -59,5 +68,6 @@ func ParseFromFlags() (*Config, error) {
 		Directory: dirToServe,
 		Gallery:   *gallery,
 		Resize:    *resize,
+		Split:     *split,
 	}, nil
 }
