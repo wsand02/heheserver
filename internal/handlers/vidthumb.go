@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"path"
 	"path/filepath"
+	"sync"
 
 	"github.com/h2non/filetype"
 	"github.com/wsand02/heheserver/internal/cache"
@@ -15,6 +16,7 @@ import (
 	"github.com/wsand02/heheserver/internal/vidthumb"
 )
 
+var oncetwolmao sync.Once
 var vidThumbCache *cache.VidThumbCache
 
 func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
@@ -24,13 +26,9 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 		return
 	}
 	defer hf.Close()
-	if vidThumbCache == nil {
-		vTC, err := cache.NewVidThumbCache()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		vidThumbCache = vTC
-	}
+	oncetwolmao.Do(func() {
+		vidThumbCache, _ = cache.NewVidThumbCache()
+	})
 	vtb, ok := vidThumbCache.Get(ctx)
 	if ok {
 		err = jpeg.Encode(w, vtb, nil)
