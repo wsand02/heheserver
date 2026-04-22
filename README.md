@@ -1,7 +1,7 @@
 # heheserver
 [![Go](https://github.com/wsand02/heheserver/actions/workflows/go.yml/badge.svg)](https://github.com/wsand02/heheserver/actions/workflows/go.yml)
 
-A simple barebones readonly http file server with file omission using heheignore files.
+A ~~simple barebones~~ readonly http file server with file omission using heheignore files.
 Written in Go.
 
 Made it because the built-in Python web server didn't properly support serving videos,
@@ -56,10 +56,8 @@ Files are only read once so if you change a heheignore file that has already bee
 Supports subdirectory heheignore files.
 
 ## Gallery view
-I wanted to rewrite the http/fs dirList function but I would either have to fork the library or copy the code and then modify it. So I just settled on embedding [ThinGallery](https://github.com/gfwilliams/ThinGallery) for the now.
+W.I.P.
 
 ## License
 
 This software is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
-The file [templates/gallery.html](templates/gallery.html) contains code derived from [ThinGallery](https://github.com/gfwilliams/ThinGallery), which is licensed under the Mozilla Public License 2.0 (MPLv2).

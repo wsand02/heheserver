@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/wsand02/heheserver/internal/config"
 	"github.com/wsand02/heheserver/internal/server"
-	"github.com/wsand02/heheserver/internal/server/config"
 	"github.com/wsand02/heheserver/internal/version"
 )
 

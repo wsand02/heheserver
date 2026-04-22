@@ -1,0 +1,37 @@
+{{ define "header" }}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>heheserver gallery</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+      /* Optional: smooth scrolling and custom focus ring */
+      html {
+        scroll-behavior: smooth;
+      }
+      *:focus-visible {
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300"
+  >
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {{ end }} {{ define "footer" }}
+      <!-- Optional footer info -->
+      <div
+        class="mt-8 text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-6"
+      >
+        <p>
+          heheserver gallery - a dynamic gallery able to be setup in any
+          directory at any moment
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
+{{ end }}
