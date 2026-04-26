@@ -42,15 +42,21 @@ heheserver [options] [path]
 
 ## Available options
 
-`-p` or `--port` The port the server will run on. (default 3400)
+`-p` or `-port` The port the server will run on. (default 3400)
 
-`-h` or `--host` The host the server will run on. (default 0.0.0.0)
+`-h` or `-host` The host the server will run on. (default 0.0.0.0)
 
-`-g` or `--gallery` Enables the embedded gallery page. (default omitted => false)
+`-g` or `-gallery` Enables the embedded gallery page. (default omitted => false)
 
-`-r` or `--resize` Enables the experimental image resizing endpoint, requires ffmpeg on path. (default omitted => false)
+`-r` or `-resize` Enables the experimental image resizing endpoint, requires ffmpeg on path. (default omitted => false)
 
-`-s` or `--split` Max items per page for gallery pagination. (default 64)
+`-s` or `-split` Max items per page for gallery pagination. (default 64)
+
+`-igncache` Size of ignore cache in megabytes, approximate. (default 16)
+
+`-rescache` Size of resize cache in megabytes, approximate. (default 1000)
+
+`-vidtcache` Size of video thumbnail cache in megabytes, approximate. (default 1000)
 
 ## Heheignore
 Basically just gitignore, but omits matching files from all directory indexes while also making the files appear as if they don't exist when you try to access them.
