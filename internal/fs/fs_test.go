@@ -26,6 +26,19 @@ func TestOpenIgnoreFile(t *testing.T) {
 	defer public.Close()
 }
 
+func TestOpenRecycleBin(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, ".heheignore"), []byte("\\$RECYCLE.BIN\n"), 0644)
+	os.WriteFile(filepath.Join(dir, "$RECYCLE.BIN"), []byte("shh"), 0644)
+
+	hfs := Dir(dir)
+
+	_, err := hfs.Open("/$RECYCLE.BIN")
+	if err == nil {
+		t.Fatal("expected error when opening ignored file $RECYCLE.BIN")
+	}
+}
+
 func TestOpenErr(t *testing.T) {
 	dir := t.TempDir()
 	hfs := Dir(dir)
