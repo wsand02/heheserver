@@ -11,16 +11,35 @@ type IgnoreCache struct {
 	*ristretto.Cache[string, *ignore.GitIgnore]
 }
 
-func NewIgnoreCache() (*IgnoreCache, error) {
+var ignoreCache *IgnoreCache
+
+func GetIgnoreCache() *IgnoreCache {
+	return ignoreCache
+}
+
+var vidThumbCache *VidThumbCache
+
+func GetVidThumbCache() *VidThumbCache {
+	return vidThumbCache
+}
+
+var resizeCache *ResizeCache
+
+func GetResizeCache() *ResizeCache {
+	return resizeCache
+}
+
+func NewIgnoreCache() error {
 	cache, err := ristretto.NewCache(&ristretto.Config[string, *ignore.GitIgnore]{
 		NumCounters: 1e4,     // 1000*10 seems ok for heheignore files...
 		MaxCost:     1 << 24, // 16MB
 		BufferItems: 64,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &IgnoreCache{cache}, nil
+	ignoreCache = &IgnoreCache{cache}
+	return nil
 }
 
 type ResizeCacheItem struct {
@@ -32,30 +51,32 @@ type ResizeCache struct {
 	*ristretto.Cache[string, ResizeCacheItem]
 }
 
-func NewResizeCache() (*ResizeCache, error) {
+func NewResizeCache() error {
 	cache, err := ristretto.NewCache(&ristretto.Config[string, ResizeCacheItem]{
 		NumCounters: 1e7,     // 10M
 		MaxCost:     1 << 30, // 1GB
 		BufferItems: 64,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &ResizeCache{cache}, nil
+	resizeCache = &ResizeCache{cache}
+	return nil
 }
 
 type VidThumbCache struct {
 	*ristretto.Cache[string, image.Image]
 }
 
-func NewVidThumbCache() (*VidThumbCache, error) {
+func NewVidThumbCache() error {
 	cache, err := ristretto.NewCache(&ristretto.Config[string, image.Image]{
 		NumCounters: 1e7,     // 10M
 		MaxCost:     1 << 30, // 1GB
 		BufferItems: 64,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &VidThumbCache{cache}, nil
+	vidThumbCache = &VidThumbCache{cache}
+	return nil
 }

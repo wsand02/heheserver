@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"path"
 	"path/filepath"
-	"sync"
 
 	"github.com/h2non/filetype"
 	"github.com/wsand02/heheserver/internal/cache"
@@ -17,9 +16,6 @@ import (
 	"github.com/wsand02/heheserver/internal/vidthumb"
 )
 
-var oncetwolmao sync.Once
-var vidThumbCache *cache.VidThumbCache
-
 func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
 	hf, err := hfs.Open(ctx)
 	if err != nil {
@@ -27,11 +23,9 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 		return
 	}
 	defer hf.Close()
-	oncetwolmao.Do(func() {
-		vidThumbCache, _ = cache.NewVidThumbCache()
-	})
+
 	w.Header().Add("Cache-Control", "private, max-age=86400")
-	vtb, ok := vidThumbCache.Get(ctx)
+	vtb, ok := cache.GetVidThumbCache().Get(ctx)
 	if ok {
 		err = jpeg.Encode(w, vtb, nil)
 		if err != nil {
@@ -72,7 +66,7 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 		utils.HttpLogErr(w, err, "Error generating thumbnail", http.StatusInternalServerError)
 		return
 	}
-	vidThumbCache.Set(ctx, img, utils.GetCost(img))
+	cache.GetVidThumbCache().Set(ctx, img, utils.GetCost(img))
 	err = jpeg.Encode(w, img, nil)
 	if err != nil {
 		utils.HttpLogErr(w, err, "Error encoding thumbnail", http.StatusInternalServerError)

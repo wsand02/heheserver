@@ -9,17 +9,19 @@ import (
 )
 
 const (
-	portDesc           string = "The port the server will run on."
-	hostDesc           string = "The host the server will run on."
-	defaultPort        int    = 3400
-	defaultDir         string = "./"
-	defaultHost        string = "0.0.0.0"
-	galleryDesc        string = "Enables the embedded gallery page."
-	defaultGalleryFlag bool   = false
-	resizeDesc         string = "Enables the experimental image resizing endpoint, requires ffmpeg on path."
-	defaultSplit       int    = 64
-	splitDesc          string = "Max items per page for gallery pagination."
-	defaultResizeFlag  bool   = false
+	portDesc               string = "The port the server will run on."
+	hostDesc               string = "The host the server will run on."
+	defaultPort            int    = 3400
+	defaultDir             string = "./"
+	defaultHost            string = "0.0.0.0"
+	galleryDesc            string = "Enables the embedded gallery page."
+	defaultGalleryFlag     bool   = false
+	resizeDesc             string = "Enables the experimental image resizing endpoint, requires ffmpeg on path."
+	defaultSplit           int    = 64
+	splitDesc              string = "Max items per page for gallery pagination."
+	defaultResizeFlag      bool   = false
+	defaultIgnoreCacheSize int    = 16
+	ignoreCacheSizeDesc    string = "Size of ignore cache in megabytes."
 )
 
 type Config struct {
