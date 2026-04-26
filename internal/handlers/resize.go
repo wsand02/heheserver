@@ -2,8 +2,11 @@ package handlers
 
 import (
 	"fmt"
+	"image"
 	"image/jpeg"
 	"image/png"
+	"io"
+	"log"
 	"net/http"
 	"path/filepath"
 	"sync"
@@ -21,7 +24,7 @@ var once sync.Once
 // since the thumbnails are so small we can just cache them in memory
 var resizeCache *cache.ResizeCache
 
-func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
+func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, cfg *config.Config) {
 	once.Do(func() {
 		resizeCache, _ = cache.NewResizeCache()
 	})
@@ -55,14 +58,22 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.H
 	var transparent bool
 	head := make([]byte, 512)
 	hf.Read(head)
+	hf.Seek(0, io.SeekStart)
 	if !filetype.IsImage(head) {
 		utils.HttpLogErr(w, fmt.Errorf("Not an image"), "Not an image", http.StatusUnsupportedMediaType)
 		return
 	}
 
-	fullName := filepath.Join(hfs.Root, ctx)
-	fmt.Println(fullName)
-	dst, err := resize.ResizeImage(fullName)
+	var dst image.Image
+
+	if cfg.FFmpegExists {
+		fullName := filepath.Join(hfs.Root, ctx)
+		fmt.Println(fullName)
+		dst, err = resize.ResizeImage(fullName)
+	} else {
+		log.Println("Resizing using fallback")
+		dst, err = resize.ResizeImageFallback(hf)
+	}
 	if err != nil {
 		utils.HttpLogErr(w, err, "Error resizing image", http.StatusInternalServerError)
 		return

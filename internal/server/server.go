@@ -35,7 +35,14 @@ func (s *Server) setupRoutes() {
 		if s.config.Resize {
 			fmt.Println("Enabling Resize Endpoint")
 			s.mux.HandleFunc("/resize/", s.makeHfsInjector(handlers.ResizeHandler))
-			s.mux.HandleFunc("/vidthumb/", s.makeHfsInjector(handlers.VidThumbHandler))
+			if s.config.FFmpegExists {
+				fmt.Println("FFmpeg found, Enabling Video Thumbnail Endpoint")
+				s.mux.HandleFunc("/vidthumb/", s.makeHfsInjector(handlers.VidThumbHandler))
+			} else {
+				fmt.Println("FFmpeg not found")
+				fmt.Println("Will resize using fallback")
+			}
+
 		}
 
 		return

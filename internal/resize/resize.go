@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"image"
+	"io"
 	"log"
 	"os/exec"
 
@@ -13,7 +14,7 @@ import (
 const width int = 300
 
 func ResizeImage(path string) (image.Image, error) {
-	cmd := exec.Command("fffatmpeg", "-i", path, "-vf", fmt.Sprintf("scale=%d:-2", width), "-f", "image2pipe", "-")
+	cmd := exec.Command("ffmpeg", "-i", path, "-vf", fmt.Sprintf("scale=%d:-2", width), "-f", "image2pipe", "-")
 
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -31,7 +32,11 @@ func ResizeImage(path string) (image.Image, error) {
 	return img, nil
 }
 
-func ResizeImageFallback(img image.Image) (*image.RGBA, error) {
+func ResizeImageFallback(r io.Reader) (*image.RGBA, error) {
+	img, _, err := image.Decode(r)
+	if err != nil {
+		return nil, err
+	}
 	if img.Bounds().Dx() == 0 || img.Bounds().Dy() == 0 {
 		return nil, fmt.Errorf("Image bounds x or y is 0")
 	}
