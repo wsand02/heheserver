@@ -5,10 +5,13 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+
+	"github.com/wsand02/heheserver/internal/cache"
 )
 
 func TestGetIgnoreForPathRace(t *testing.T) {
 	root := t.TempDir()
+	cache.NewIgnoreCache(16)
 	sub := filepath.Join(root, "sub")
 	os.MkdirAll(sub, 0755)
 
