@@ -16,11 +16,12 @@ import (
 )
 
 type GalleryContext struct {
-	Items       []models.GalleryItem
-	Resize      bool
-	Path        string
-	CurrentPage int
-	MaxPage     int
+	Items        []models.GalleryItem
+	Resize       bool
+	FFmpegExists bool
+	Path         string
+	CurrentPage  int
+	MaxPage      int
 }
 
 func (gc *GalleryContext) GetBreadcrumbs() []string {
@@ -75,6 +76,7 @@ func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.
 		gc.Items = append(gc.Items, models.GalleryItem{Filename: item.Name(), IsDir: item.IsDir(), Size: item.Size(), ModTime: item.ModTime(), Path: ctx})
 	}
 	gc.Resize = config.Resize
+	gc.FFmpegExists = config.FFmpegExists
 	gc.Path = ctx
 	gc.CurrentPage = pid + 1
 	gc.MaxPage = len(divided)
