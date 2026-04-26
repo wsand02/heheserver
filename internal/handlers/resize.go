@@ -2,8 +2,11 @@ package handlers
 
 import (
 	"fmt"
+	"image"
 	"image/jpeg"
 	"image/png"
+	"io"
+	"log"
 	"net/http"
 	"path/filepath"
 	"sync"
@@ -21,7 +24,7 @@ var once sync.Once
 // since the thumbnails are so small we can just cache them in memory
 var resizeCache *cache.ResizeCache
 
-func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
+func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, cfg *config.Config) {
 	once.Do(func() {
 		resizeCache, _ = cache.NewResizeCache()
 	})
@@ -32,14 +35,14 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.H
 		if cImg.Transparent {
 			err := png.Encode(w, cImg.Image)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				utils.HttpLogErr(w, err, "Error encoding cached png", http.StatusInternalServerError)
 				return
 			}
 			return
 		}
 		err := jpeg.Encode(w, cImg.Image, nil)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			utils.HttpLogErr(w, err, "Error encoding cached jpeg", http.StatusInternalServerError)
 			return
 		}
 		return
@@ -47,7 +50,7 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.H
 
 	hf, err := hfs.Open(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HttpLogErr(w, err, "Error opening file", http.StatusInternalServerError)
 		return
 	}
 	defer hf.Close()
@@ -55,16 +58,24 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.H
 	var transparent bool
 	head := make([]byte, 512)
 	hf.Read(head)
+	hf.Seek(0, io.SeekStart)
 	if !filetype.IsImage(head) {
-		http.Error(w, "Not an image", http.StatusUnsupportedMediaType)
+		utils.HttpLogErr(w, fmt.Errorf("Not an image"), "Not an image", http.StatusUnsupportedMediaType)
 		return
 	}
 
-	fullName := filepath.Join(hfs.Root, ctx)
-	fmt.Println(fullName)
-	dst, err := resize.ResizeImage(fullName)
+	var dst image.Image
+
+	if cfg.FFmpegExists {
+		fullName := filepath.Join(hfs.Root, ctx)
+		fmt.Println(fullName)
+		dst, err = resize.ResizeImage(fullName)
+	} else {
+		log.Println("Resizing using fallback")
+		dst, err = resize.ResizeImageFallback(hf)
+	}
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HttpLogErr(w, err, "Error resizing image", http.StatusInternalServerError)
 		return
 	}
 
@@ -74,7 +85,7 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.H
 	}, utils.GetCost(dst))
 	err = jpeg.Encode(w, dst, nil)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HttpLogErr(w, err, "Error encoding jpeg", http.StatusInternalServerError)
 		return
 	}
 }

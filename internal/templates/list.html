@@ -51,7 +51,9 @@
       loading="lazy"
       {{
       if
+      and
       $.Resize
+      $.FFmpegExists
       }}
       poster="{{ .GetVidThumb }}"
       {{end

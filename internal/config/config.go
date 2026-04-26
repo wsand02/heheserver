@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/wsand02/heheserver/internal/utils"
 )
 
 const (
@@ -21,12 +23,13 @@ const (
 )
 
 type Config struct {
-	Port      int
-	Host      string
-	Gallery   bool
-	Resize    bool
-	Directory string
-	Split     int
+	Port         int
+	Host         string
+	Gallery      bool
+	Resize       bool
+	Directory    string
+	Split        int
+	FFmpegExists bool
 }
 
 func NewConfig(port, split int, gallery, resize bool, directory, host string) (*Config, error) {
@@ -38,13 +41,15 @@ func NewConfig(port, split int, gallery, resize bool, directory, host string) (*
 	if err != nil {
 		return nil, fmt.Errorf("directory does not exist: %w", err)
 	}
+
 	return &Config{
-		Port:      port,
-		Host:      host,
-		Directory: directory,
-		Gallery:   gallery,
-		Resize:    resize,
-		Split:     split,
+		Port:         port,
+		Host:         host,
+		Directory:    directory,
+		Gallery:      gallery,
+		Resize:       resize,
+		Split:        split,
+		FFmpegExists: utils.FFmpegExists(),
 	}, nil
 }
 
