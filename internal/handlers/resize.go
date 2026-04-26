@@ -23,6 +23,7 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.H
 	cImg, ok := cache.GetResizeCache().Get(ctx)
 	w.Header().Add("Cache-Control", "private, max-age=86400")
 	if ok {
+		log.Println("cached")
 		if cImg.Transparent {
 			err := png.Encode(w, cImg.Image)
 			if err != nil {

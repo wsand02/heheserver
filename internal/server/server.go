@@ -28,17 +28,17 @@ func (s *Server) makeHfsInjector(fn func(http.ResponseWriter, *http.Request, str
 }
 
 func (s *Server) initCache() {
-	err := cache.NewIgnoreCache()
+	err := cache.NewIgnoreCache(s.config.IgnoreCacheSize)
 	if err != nil {
 		log.Fatal(err)
 	}
 	if s.config.Resize {
-		err = cache.NewResizeCache()
+		err = cache.NewResizeCache(s.config.ResizeCacheSize)
 		if err != nil {
 			log.Fatal(err)
 		}
 		if s.config.FFmpegExists {
-			err = cache.NewVidThumbCache()
+			err = cache.NewVidThumbCache(s.config.VidThumbCacheSize)
 			if err != nil {
 				log.Fatal(err)
 			}

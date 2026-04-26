@@ -11,7 +11,7 @@ import (
 
 func TestGetIgnoreForPathRace(t *testing.T) {
 	root := t.TempDir()
-	cache.NewIgnoreCache()
+	cache.NewIgnoreCache(16)
 	sub := filepath.Join(root, "sub")
 	os.MkdirAll(sub, 0755)
 

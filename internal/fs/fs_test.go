@@ -10,7 +10,7 @@ import (
 
 func TestOpenIgnoreFile(t *testing.T) {
 	dir := t.TempDir()
-	cache.NewIgnoreCache()
+	cache.NewIgnoreCache(16)
 	os.WriteFile(filepath.Join(dir, ".heheignore"), []byte("secret.txt\n"), 0644)
 	os.WriteFile(filepath.Join(dir, "secret.txt"), []byte("shh"), 0644)
 	os.WriteFile(filepath.Join(dir, "public.txt"), []byte("hi"), 0644)
@@ -31,7 +31,7 @@ func TestOpenIgnoreFile(t *testing.T) {
 
 func TestOpenRecycleBin(t *testing.T) {
 	dir := t.TempDir()
-	cache.NewIgnoreCache()
+	cache.NewIgnoreCache(16)
 	os.WriteFile(filepath.Join(dir, ".heheignore"), []byte("\\$RECYCLE.BIN\n"), 0644)
 	os.WriteFile(filepath.Join(dir, "$RECYCLE.BIN"), []byte("shh"), 0644)
 
@@ -54,7 +54,7 @@ func TestOpenErr(t *testing.T) {
 
 func TestSubDirectory(t *testing.T) {
 	dir := t.TempDir()
-	cache.NewIgnoreCache()
+	cache.NewIgnoreCache(16)
 	os.WriteFile(filepath.Join(dir, ".heheignore"), []byte("secret.txt\n"), 0644)
 	os.WriteFile(filepath.Join(dir, "secret.txt"), []byte("shh"), 0644)
 	os.WriteFile(filepath.Join(dir, "public.txt"), []byte("hi"), 0644)
@@ -79,7 +79,7 @@ func TestSubDirectory(t *testing.T) {
 
 func TestReaddirIgnoreFile(t *testing.T) {
 	dir := t.TempDir()
-	cache.NewIgnoreCache()
+	cache.NewIgnoreCache(16)
 	os.WriteFile(filepath.Join(dir, ".heheignore"), []byte("secret.txt\n"), 0644)
 	os.WriteFile(filepath.Join(dir, "secret.txt"), []byte("shh"), 0644)
 	os.WriteFile(filepath.Join(dir, "public.txt"), []byte("hi"), 0644)
