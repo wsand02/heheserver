@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/wsand02/heheserver/internal/cache"
 	"github.com/wsand02/heheserver/internal/config"
 	"github.com/wsand02/heheserver/internal/fs"
 	"github.com/wsand02/heheserver/internal/handlers"
@@ -23,6 +24,25 @@ func (s *Server) makeHfsInjector(fn func(http.ResponseWriter, *http.Request, str
 			q = "/"
 		}
 		fn(w, r, q, s.hfs, s.config)
+	}
+}
+
+func (s *Server) initCache() {
+	err := cache.NewIgnoreCache(s.config.IgnoreCacheSize)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if s.config.Resize {
+		err = cache.NewResizeCache(s.config.ResizeCacheSize)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if s.config.FFmpegExists {
+			err = cache.NewVidThumbCache(s.config.VidThumbCacheSize)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 	}
 }
 
@@ -62,6 +82,7 @@ func NewServer(cfg *config.Config) *Server {
 		mux:    mux,
 		hfs:    hfsa,
 	}
+	srv.initCache()
 	srv.setupRoutes()
 	return srv
 }

@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
-	"sync"
 
 	"github.com/h2non/filetype"
 	"github.com/wsand02/heheserver/internal/cache"
@@ -19,19 +18,12 @@ import (
 	"github.com/wsand02/heheserver/internal/utils"
 )
 
-var once sync.Once
-
-// since the thumbnails are so small we can just cache them in memory
-var resizeCache *cache.ResizeCache
-
 func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, cfg *config.Config) {
-	once.Do(func() {
-		resizeCache, _ = cache.NewResizeCache()
-	})
 
-	cImg, ok := resizeCache.Get(ctx)
+	cImg, ok := cache.GetResizeCache().Get(ctx)
 	w.Header().Add("Cache-Control", "private, max-age=86400")
 	if ok {
+		log.Println("cached")
 		if cImg.Transparent {
 			err := png.Encode(w, cImg.Image)
 			if err != nil {
@@ -79,7 +71,7 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.H
 		return
 	}
 
-	resizeCache.Set(ctx, cache.ResizeCacheItem{
+	cache.GetResizeCache().Set(ctx, cache.ResizeCacheItem{
 		Image:       dst,
 		Transparent: transparent,
 	}, utils.GetCost(dst))
