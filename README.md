@@ -46,7 +46,11 @@ heheserver [options] [path]
 
 `-h` or `--host` The host the server will run on. (default 0.0.0.0)
 
-`-g` or `--gallery` Enables the embedded gallery view. (default omitted => false)
+`-g` or `--gallery` Enables the embedded gallery page. (default omitted => false)
+
+`-r` or `--resize` Enables the experimental image resizing endpoint, requires ffmpeg on path. (default omitted => false)
+
+`-s` or `--split` Max items per page for gallery pagination. (default 64)
 
 ## Heheignore
 Basically just gitignore, but omits matching files from all directory indexes while also making the files appear as if they don't exist when you try to access them.
