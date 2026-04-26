@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/wsand02/heheserver/internal/fs"
 	"github.com/wsand02/heheserver/internal/models"
 	"github.com/wsand02/heheserver/internal/templates"
+	"github.com/wsand02/heheserver/internal/utils"
 )
 
 type GalleryContext struct {
@@ -38,13 +40,13 @@ func (gc *GalleryContext) BreadcrumbToUrl(i int) string {
 func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
 	hf, err := hfs.Open(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HttpLogErr(w, err, "Error opening file", http.StatusInternalServerError)
 		return
 	}
 	defer hf.Close()
 	dirlis, err := hf.Readdir(-1)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HttpLogErr(w, err, "Error reading dir", http.StatusInternalServerError)
 		return
 	}
 	var divided [][]iofs.FileInfo
@@ -57,12 +59,12 @@ func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.
 	}
 	pid, err := strconv.Atoi(q)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.HttpLogErr(w, err, "Query conversion failed", http.StatusBadRequest)
 		return
 	}
 	pid -= 1
 	if pid > len(divided) || pid < 0 {
-		http.Error(w, "p out of range", http.StatusBadRequest)
+		utils.HttpLogErr(w, fmt.Errorf("p: %d out of range", pid), "p out of range", http.StatusBadRequest)
 		return
 	}
 	var gc GalleryContext
@@ -87,17 +89,17 @@ type PostContext struct {
 func PostHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
 	hf, err := hfs.Open(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError) // might leak path but for the intended deployment scenario, does not matter
+		utils.HttpLogErr(w, err, "Error opening file", http.StatusInternalServerError)
 		return
 	}
 	defer hf.Close()
 	hfstat, err := hf.Stat()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HttpLogErr(w, err, "Failed to fetch file info", http.StatusInternalServerError)
 		return
 	}
 	if hfstat.IsDir() {
-		http.Error(w, "This is a directory", http.StatusUnsupportedMediaType)
+		utils.HttpLogErr(w, fmt.Errorf("Directory on posthandler"), "This is a directory", http.StatusBadRequest)
 		return
 	}
 	templates.RenderTemplate(w, "post", &PostContext{models.GalleryItem{Filename: hfstat.Name(), IsDir: hfstat.IsDir(), Path: ctx, Size: hfstat.Size(), ModTime: hfstat.ModTime()}}) // oh well

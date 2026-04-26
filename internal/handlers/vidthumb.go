@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"image/jpeg"
+	"log"
 	"net/http"
 	"path"
 	"path/filepath"
@@ -22,18 +23,19 @@ var vidThumbCache *cache.VidThumbCache
 func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
 	hf, err := hfs.Open(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HttpLogErr(w, err, "Error opening file", http.StatusInternalServerError)
 		return
 	}
 	defer hf.Close()
 	oncetwolmao.Do(func() {
 		vidThumbCache, _ = cache.NewVidThumbCache()
 	})
+	w.Header().Add("Cache-Control", "private, max-age=86400")
 	vtb, ok := vidThumbCache.Get(ctx)
 	if ok {
 		err = jpeg.Encode(w, vtb, nil)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			utils.HttpLogErr(w, err, "Error encoding cached thumbnail", http.StatusInternalServerError)
 			return
 		}
 		return
@@ -41,12 +43,12 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 	head := make([]byte, 512)
 	hf.Read(head)
 	if !filetype.IsVideo(head) {
-		http.Error(w, "Not a video", http.StatusUnsupportedMediaType)
+		utils.HttpLogErr(w, fmt.Errorf("Not a video"), "Not a video", http.StatusUnsupportedMediaType)
 		return
 	}
 
 	hfstat, _ := hf.Stat()
-	fmt.Println(hfstat.Name())
+	log.Println(hfstat.Name())
 	// a := path.Clean(path.Clean("/" + ctx)[1:])
 	// a, _ = filepath.Localize(a)
 
@@ -67,13 +69,13 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 	fullName := filepath.Join(dir, path)
 	img, err := vidthumb.GenerateThumb(fullName)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HttpLogErr(w, err, "Error generating thumbnail", http.StatusInternalServerError)
 		return
 	}
 	vidThumbCache.Set(ctx, img, utils.GetCost(img))
 	err = jpeg.Encode(w, img, nil)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HttpLogErr(w, err, "Error encoding thumbnail", http.StatusInternalServerError)
 		return
 	}
 }
