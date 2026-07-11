@@ -5,32 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
-	"strings"
 	"testing"
 )
-
-func TestPageURL(t *testing.T) {
-	cases := []struct {
-		path string
-		page int
-		want string
-	}{
-		{"", 1, "?"},
-		{"", 2, "?p=2"},
-		{"foo/bar", 1, "?path=foo%2Fbar"},
-	}
-	for _, c := range cases {
-		if got := pageURL(c.path, c.page); got != c.want {
-			t.Errorf("pageURL(%q, %d) = %q, want %q", c.path, c.page, got, c.want)
-		}
-	}
-
-	// Ordering of query values is not guaranteed, so assert on substrings.
-	got := pageURL("foo", 3)
-	if !strings.Contains(got, "path=foo") || !strings.Contains(got, "p=3") {
-		t.Errorf("pageURL(%q, %d) = %q, want it to contain path=foo and p=3", "foo", 3, got)
-	}
-}
 
 func TestSeq(t *testing.T) {
 	cases := []struct {

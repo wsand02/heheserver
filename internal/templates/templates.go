@@ -2,11 +2,9 @@ package templates
 
 import (
 	"embed"
-	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
-	"net/url"
 
 	"github.com/wsand02/heheserver/internal/version"
 )
@@ -34,19 +32,6 @@ func gt(a, b int) bool { return a > b }
 func lt(a, b int) bool { return a < b }
 func ge(a, b int) bool { return a >= b }
 func le(a, b int) bool { return a <= b }
-func pageURL(path string, page int) string {
-	q := url.Values{}
-	if path != "" {
-		q.Set("path", path)
-	}
-	if page > 1 { // optionally omit p=1 for cleaner URL
-		q.Set("p", fmt.Sprintf("%d", page))
-	}
-	if len(q) == 0 {
-		return "?"
-	}
-	return "?" + q.Encode()
-}
 
 // seq returns a slice of ints from start to end inclusive
 func seq(start, end int) []int {
@@ -66,7 +51,6 @@ var templates = template.Must(template.New("").Funcs(template.FuncMap{"sub": sub
 	"lt":      lt,
 	"ge":      ge,
 	"le":      le,
-	"pageURL": pageURL,
 	"seq":     seq,
 	"version": version.GetVersion}).ParseFS(templatesFS, "*.html"))
 

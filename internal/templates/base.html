@@ -112,6 +112,41 @@
       a:visited {
         color: #23b0ff;
       }
+      /* Gallery filter bar. */
+      .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: flex-end;
+        margin: 1rem 0 1.5rem;
+        padding: 1rem;
+        border: 1px solid rgba(128, 128, 128, 0.25);
+        border-radius: 0.3rem;
+      }
+      .filter-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+      .filter-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: gray;
+      }
+      .filter-types {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+      .filter-type {
+        margin: 0;
+        text-transform: capitalize;
+      }
+      .filter-actions {
+        display: flex;
+        gap: 0.4rem;
+      }
     </style>
   </head>
   <body>
@@ -169,18 +204,30 @@
         if (document.querySelector(".pagination__next")) {
           var dirPath = grid.getAttribute("data-path") || "";
           var startPage = parseInt(grid.getAttribute("data-page"), 10) || 1;
+          // Active filters, carried forward so later pages stay filtered.
+          var filterType = grid.getAttribute("data-type") || "";
+          var filterQuery = grid.getAttribute("data-query") || "";
+          var filterExt = grid.getAttribute("data-ext") || "";
           new InfiniteScroll(grid, {
             // Build the next-page URL explicitly from the real page number.
             // A selector/template path makes Infinite Scroll hunt for "the
             // number" in the URL, but digits inside percent-encoded path
             // segments (e.g. %2F, %3F) fool that heuristic and corrupt ?path=.
             path: function () {
-              return (
+              var url =
                 "?path=" +
                 encodeURIComponent(dirPath) +
                 "&p=" +
-                (startPage + this.loadCount + 1)
-              );
+                (startPage + this.loadCount + 1);
+              // data-type is a comma-joined list; emit one type= per value.
+              if (filterType) {
+                filterType.split(",").forEach(function (t) {
+                  url += "&type=" + encodeURIComponent(t);
+                });
+              }
+              if (filterQuery) url += "&q=" + encodeURIComponent(filterQuery);
+              if (filterExt) url += "&ext=" + encodeURIComponent(filterExt);
+              return url;
             },
             checkLastPage: ".pagination__next", // stop when a page has no Next link
             status: ".page-load-status", // loading / end / error indicator

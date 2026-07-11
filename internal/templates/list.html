@@ -8,7 +8,41 @@
   {{ end }}
 </ul>
 
-<div class="grid" data-path="{{ .Path }}" data-page="{{ .CurrentPage }}">
+<form method="get" class="filter-bar">
+  <input type="hidden" name="path" value="{{ .Path }}" />
+  <div class="filter-field">
+    <span class="filter-label">Type</span>
+    <div class="filter-types">
+      {{ range $t := .TypeOptions }}
+      <label class="form-checkbox filter-type">
+        <input type="checkbox" name="type" value="{{ $t }}" {{ if $.TypeChecked $t }}checked{{ end }} />
+        <i class="form-icon"></i> {{ $t }}
+      </label>
+      {{ end }}
+    </div>
+  </div>
+  <div class="filter-field">
+    <span class="filter-label">Search</span>
+    <input class="form-input" type="text" name="q" value="{{ .FilterQuery }}" placeholder="filename" />
+  </div>
+  <div class="filter-field">
+    <span class="filter-label">Extension</span>
+    <input class="form-input" type="text" name="ext" value="{{ .FilterExt }}" placeholder=".png, .mp4" />
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-primary">Apply</button>
+    <a href="{{ .ClearURL }}" class="btn">Clear</a>
+  </div>
+</form>
+
+<div
+  class="grid"
+  data-path="{{ .Path }}"
+  data-page="{{ .CurrentPage }}"
+  data-type="{{ .TypesParam }}"
+  data-query="{{ .FilterQuery }}"
+  data-ext="{{ .FilterExt }}"
+>
   <div class="grid-sizer"></div>
   <div class="gutter-sizer"></div>
   {{ range .Items }}
@@ -80,6 +114,10 @@
   {{ end }}
 </div>
 
+{{ if not .Items }}
+<p class="text-gray text-center" style="padding: 2rem 0">No matching files</p>
+{{ end }}
+
 <!-- Infinite Scroll status (hidden until JS drives loading; no-JS uses the pagination below). -->
 <div class="page-load-status" aria-live="polite">
   <div class="infinite-scroll-request">
@@ -94,7 +132,7 @@
   <!-- Previous -->
   {{ if gt .CurrentPage 1 }}
   <li class="page-item">
-    <a href="{{ pageURL .Path (sub .CurrentPage 1) }}" aria-label="Previous">
+    <a href="{{ $.PageURL (sub .CurrentPage 1) }}" aria-label="Previous">
       <i class="icon icon-arrow-left"></i>
     </a>
   </li>
@@ -109,21 +147,21 @@
   sub $currentPage 2 }} {{ $end := add $currentPage 2 }} {{ if lt $start 1
   }}{{ $start = 1 }}{{ end }} {{ if gt $end $maxPage }}{{ $end = $maxPage }}{{
   end }} {{ if gt $start 2 }}
-  <li class="page-item"><a href="{{ pageURL .Path 1 }}">1</a></li>
+  <li class="page-item"><a href="{{ $.PageURL 1 }}">1</a></li>
   {{ if gt $start 3 }}<li class="page-item disabled"><span>...</span></li>{{ end }}
   {{ end }} {{ range $i := seq $start $end }} {{ if eq $i $currentPage }}
   <li class="page-item active"><a>{{ $i }}</a></li>
   {{ else }}
-  <li class="page-item"><a href="{{ pageURL $.Path $i }}">{{ $i }}</a></li>
+  <li class="page-item"><a href="{{ $.PageURL $i }}">{{ $i }}</a></li>
   {{ end }} {{ end }} {{ if lt $end (sub $maxPage 1) }} {{ if lt $end (sub
   $maxPage 2) }}<li class="page-item disabled"><span>...</span></li>{{ end }}
-  <li class="page-item"><a href="{{ pageURL .Path $maxPage }}">{{ $maxPage }}</a></li>
+  <li class="page-item"><a href="{{ $.PageURL $maxPage }}">{{ $maxPage }}</a></li>
   {{ end }}
 
   <!-- Next -->
   {{ if lt .CurrentPage .MaxPage }}
   <li class="page-item">
-    <a href="{{ pageURL .Path (add .CurrentPage 1) }}" class="pagination__next" aria-label="Next">
+    <a href="{{ $.PageURL (add .CurrentPage 1) }}" class="pagination__next" aria-label="Next">
       <i class="icon icon-arrow-right"></i>
     </a>
   </li>

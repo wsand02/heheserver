@@ -48,6 +48,51 @@ func (gi *GalleryItem) IsAudio() bool {
 		return false
 	}
 }
+// TypeCategory classifies the item into a single filter bucket:
+// "dir", "image", "video", "audio", or "other". It is the single source of
+// truth for type-based filtering, built on the Is* predicates above.
+func (gi *GalleryItem) TypeCategory() string {
+	switch {
+	case gi.IsDir:
+		return "dir"
+	case gi.IsImage():
+		return "image"
+	case gi.IsVideo():
+		return "video"
+	case gi.IsAudio():
+		return "audio"
+	default:
+		return "other"
+	}
+}
+
+// GalleryFilter narrows a directory listing. An empty field means "no
+// constraint" for that dimension; active constraints combine with AND.
+type GalleryFilter struct {
+	Types map[string]bool // TypeCategory values to keep; empty = all
+	Query string          // lowercased filename substring; "" = no filter
+	Exts  map[string]bool // normalized ".png" extension keys; empty = all
+}
+
+// Active reports whether any filter dimension is set.
+func (f GalleryFilter) Active() bool {
+	return len(f.Types) > 0 || f.Query != "" || len(f.Exts) > 0
+}
+
+// Matches reports whether gi satisfies every active filter dimension.
+func (f GalleryFilter) Matches(gi *GalleryItem) bool {
+	if len(f.Types) > 0 && !f.Types[gi.TypeCategory()] {
+		return false
+	}
+	if f.Query != "" && !strings.Contains(strings.ToLower(gi.Filename), f.Query) {
+		return false
+	}
+	if len(f.Exts) > 0 && !f.Exts[strings.ToLower(filepath.Ext(gi.Filename))] {
+		return false
+	}
+	return true
+}
+
 func (gi *GalleryItem) IsResizable() bool {
 	ext := strings.ToLower(filepath.Ext(gi.Filename))
 	switch ext {
