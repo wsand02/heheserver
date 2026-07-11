@@ -62,7 +62,7 @@ heheserver [options] [path]
 
 `-r` or `-resize` Enables the image resizing endpoint. Uses ffmpeg if it's on your `PATH`, otherwise a pure-Go fallback. When ffmpeg is present this also enables video thumbnails. (default omitted => false)
 
-`-s` or `-split` Max items per page for gallery pagination. (default 64)
+`-s` or `-split` Max items per page for gallery pagination. (default 48)
 
 `-igncache` Size of ignore cache in megabytes, approximate. (default 16)
 
