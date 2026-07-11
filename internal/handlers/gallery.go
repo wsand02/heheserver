@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -32,9 +33,11 @@ func (gc *GalleryContext) GetBreadcrumbs() []string {
 func (gc *GalleryContext) BreadcrumbToUrl(i int) string {
 	crumbs := gc.GetBreadcrumbs()[1 : i+1]
 	pcrumbs := []string{"?path="}
-	pcrumbs = append(pcrumbs, crumbs...)
-	url := strings.Join(pcrumbs, "/")
-	urla := strings.Join([]string{url, "/"}, "")
+	for _, c := range crumbs {
+		pcrumbs = append(pcrumbs, url.QueryEscape(c))
+	}
+	u := strings.Join(pcrumbs, "/")
+	urla := strings.Join([]string{u, "/"}, "")
 	return urla
 }
 

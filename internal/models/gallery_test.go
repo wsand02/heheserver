@@ -174,6 +174,27 @@ func TestGalleryItem_GetUrl(t *testing.T) {
 			isDir:    true,
 			want:     "?path=/folder/lefolder/",
 		},
+		{
+			name:     "emoji file",
+			path:     "/folder/",
+			filename: "😀.jpg",
+			isDir:    false,
+			want:     "/fs/folder/%F0%9F%98%80.jpg",
+		},
+		{
+			name:     "space file",
+			path:     "/folder/",
+			filename: "a b.png",
+			isDir:    false,
+			want:     "/fs/folder/a%20b.png",
+		},
+		{
+			name:     "emoji folder",
+			path:     "/folder/",
+			filename: "😀",
+			isDir:    true,
+			want:     "?path=/folder/%F0%9F%98%80/",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -196,6 +217,11 @@ func TestGalleryItem_GetPath(t *testing.T) {
 			name: "Path",
 			path: "/hello/",
 			want: "/fs/hello/",
+		},
+		{
+			name: "emoji path",
+			path: "/hello/😀.jpg",
+			want: "/fs/hello/%F0%9F%98%80.jpg",
 		},
 	}
 	for _, tt := range tests {
@@ -222,6 +248,24 @@ func TestGalleryItem_GetPostLink(t *testing.T) {
 			filename: "hellosir.jpeg",
 			want:     "/post/?path=/hellothere/hellosir.jpeg",
 		},
+		{
+			name:     "emoji",
+			path:     "/hellothere/",
+			filename: "😀.jpg",
+			want:     "/post/?path=/hellothere/%F0%9F%98%80.jpg",
+		},
+		{
+			name:     "plus",
+			path:     "/hellothere/",
+			filename: "c++.png",
+			want:     "/post/?path=/hellothere/c%2B%2B.png",
+		},
+		{
+			name:     "space",
+			path:     "/hellothere/",
+			filename: "a b.png",
+			want:     "/post/?path=/hellothere/a+b.png",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -247,6 +291,12 @@ func TestGalleryItem_GetResized(t *testing.T) {
 			filename: "hellosir.jpeg",
 			want:     "/resize/?path=/hellothere/hellosir.jpeg",
 		},
+		{
+			name:     "emoji",
+			path:     "/hellothere/",
+			filename: "😀.jpg",
+			want:     "/resize/?path=/hellothere/%F0%9F%98%80.jpg",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -271,6 +321,12 @@ func TestGalleryItem_GetVidThumb(t *testing.T) {
 			path:     "/hellothere/",
 			filename: "hellosir.mp4",
 			want:     "/vidthumb/?path=/hellothere/hellosir.mp4",
+		},
+		{
+			name:     "emoji",
+			path:     "/hellothere/",
+			filename: "😀.mp4",
+			want:     "/vidthumb/?path=/hellothere/%F0%9F%98%80.mp4",
 		},
 	}
 	for _, tt := range tests {

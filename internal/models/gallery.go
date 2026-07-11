@@ -1,6 +1,7 @@
 package models
 
 import (
+	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -58,25 +59,45 @@ func (gi *GalleryItem) IsResizable() bool {
 	}
 }
 
+// escapeQueryPath percent-encodes each path segment for use as a ?path= query
+// value, leaving the separating slashes intact so the path stays readable.
+func escapeQueryPath(p string) string {
+	segs := strings.Split(p, "/")
+	for i, s := range segs {
+		segs[i] = url.QueryEscape(s)
+	}
+	return strings.Join(segs, "/")
+}
+
+// escapeURLPath percent-encodes each path segment for use in a /fs/... URL path,
+// leaving the separating slashes intact.
+func escapeURLPath(p string) string {
+	segs := strings.Split(p, "/")
+	for i, s := range segs {
+		segs[i] = url.PathEscape(s)
+	}
+	return strings.Join(segs, "/")
+}
+
 func (gi *GalleryItem) GetUrl() string {
 	if gi.IsDir {
-		return strings.Join([]string{"?path=", gi.Path, gi.Filename, "/"}, "")
+		return strings.Join([]string{"?path=", escapeQueryPath(gi.Path + gi.Filename), "/"}, "")
 	}
-	return strings.Join([]string{"/fs", gi.Path, gi.Filename}, "")
+	return strings.Join([]string{"/fs", escapeURLPath(gi.Path + gi.Filename)}, "")
 }
 
 func (gi *GalleryItem) GetPath() string {
-	return strings.Join([]string{"/fs", gi.Path}, "")
+	return strings.Join([]string{"/fs", escapeURLPath(gi.Path)}, "")
 }
 
 func (gi *GalleryItem) GetPostLink() string {
-	return strings.Join([]string{"/post/", "?path=", gi.Path, gi.Filename}, "")
+	return strings.Join([]string{"/post/", "?path=", escapeQueryPath(gi.Path + gi.Filename)}, "")
 }
 
 func (gi *GalleryItem) GetResized() string {
-	return strings.Join([]string{"/resize/", "?path=", gi.Path, gi.Filename}, "")
+	return strings.Join([]string{"/resize/", "?path=", escapeQueryPath(gi.Path + gi.Filename)}, "")
 }
 
 func (gi *GalleryItem) GetVidThumb() string {
-	return strings.Join([]string{"/vidthumb/", "?path=", gi.Path, gi.Filename}, "")
+	return strings.Join([]string{"/vidthumb/", "?path=", escapeQueryPath(gi.Path + gi.Filename)}, "")
 }
