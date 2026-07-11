@@ -25,13 +25,23 @@ type GalleryContext struct {
 	MaxPage      int
 }
 
+// GetBreadcrumbs returns the non-empty path segments. Splitting on "/" yields
+// empty leading/trailing segments (e.g. "/" -> ["", ""], "/foo/bar/" ->
+// ["", "foo", "bar", ""]); those would render as blank breadcrumb items, so
+// they are dropped here. The hardcoded "Home" crumb in the template covers the
+// root, so an empty slice is correct for "/".
 func (gc *GalleryContext) GetBreadcrumbs() []string {
-	return strings.Split(gc.Path, "/")
-
+	var parts []string
+	for _, p := range strings.Split(gc.Path, "/") {
+		if p != "" {
+			parts = append(parts, p)
+		}
+	}
+	return parts
 }
 
 func (gc *GalleryContext) BreadcrumbToUrl(i int) string {
-	crumbs := gc.GetBreadcrumbs()[1 : i+1]
+	crumbs := gc.GetBreadcrumbs()[: i+1]
 	pcrumbs := []string{"?path="}
 	for _, c := range crumbs {
 		pcrumbs = append(pcrumbs, url.QueryEscape(c))
