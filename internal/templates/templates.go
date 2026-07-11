@@ -3,10 +3,10 @@ package templates
 import (
 	"embed"
 	"fmt"
+	"html/template"
 	"io/fs"
 	"net/http"
 	"net/url"
-	"text/template"
 )
 
 //go:embed *.html
