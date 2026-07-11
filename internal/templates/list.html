@@ -83,13 +83,13 @@
 <ul class="pagination" style="justify-content: center; margin-top: 2rem">
   <!-- Previous -->
   {{ if gt .CurrentPage 1 }}
-  <li class="page-item page-prev">
+  <li class="page-item">
     <a href="{{ pageURL .Path (sub .CurrentPage 1) }}" aria-label="Previous">
       <i class="icon icon-arrow-left"></i>
     </a>
   </li>
   {{ else }}
-  <li class="page-item page-prev disabled">
+  <li class="page-item disabled">
     <a aria-disabled="true"><i class="icon icon-arrow-left"></i></a>
   </li>
   {{ end }}
@@ -112,13 +112,13 @@
 
   <!-- Next -->
   {{ if lt .CurrentPage .MaxPage }}
-  <li class="page-item page-next">
+  <li class="page-item">
     <a href="{{ pageURL .Path (add .CurrentPage 1) }}" aria-label="Next">
       <i class="icon icon-arrow-right"></i>
     </a>
   </li>
   {{ else }}
-  <li class="page-item page-next disabled">
+  <li class="page-item disabled">
     <a aria-disabled="true"><i class="icon icon-arrow-right"></i></a>
   </li>
   {{ end }}
