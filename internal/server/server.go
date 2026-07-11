@@ -91,6 +91,9 @@ func NewServer(cfg *config.Config) *Server {
 
 func (s *Server) Start() error {
 	addr := s.config.GetAddress()
-	fmt.Printf("Serving %v on %v\n", s.config.Directory, addr)
+	fmt.Printf("Serving %v\n", s.config.Directory)
+	for _, url := range s.config.GetDisplayURLs() {
+		fmt.Printf("  %s\n", url)
+	}
 	return http.ListenAndServe(addr, s.mux)
 }

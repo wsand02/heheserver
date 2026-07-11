@@ -69,6 +69,24 @@ func (c *Config) GetAddress() string {
 	return fmt.Sprintf("%s:%v", c.Host, c.Port)
 }
 
+// GetDisplayURLs returns the human-facing URLs the server is reachable at:
+// always a localhost URL, plus a LAN URL unless the server is only bound
+// to a loopback address.
+func (c *Config) GetDisplayURLs() []string {
+	urls := []string{fmt.Sprintf("http://localhost:%d", c.Port)}
+	switch c.Host {
+	case "127.0.0.1", "localhost", "::1":
+		return urls
+	case "0.0.0.0", "":
+		if ip, err := utils.GetLocalIP(); err == nil {
+			urls = append(urls, fmt.Sprintf("http://%s:%d", ip, c.Port))
+		}
+	default:
+		urls = append(urls, fmt.Sprintf("http://%s:%d", c.Host, c.Port))
+	}
+	return urls
+}
+
 func ParseFromFlags() (*Config, error) {
 	port := flag.Int("port", defaultPort, portDesc)
 	host := flag.String("host", defaultHost, hostDesc)

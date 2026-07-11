@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"image"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -30,4 +31,15 @@ func TestHttpLogErr(t *testing.T) {
 func TestFFmpegExists(t *testing.T) {
 	// Result depends on the host; just assert it does not panic and returns a bool.
 	_ = FFmpegExists()
+}
+
+func TestGetLocalIP(t *testing.T) {
+	ip, err := GetLocalIP()
+	if err != nil {
+		// No network available in this environment; nothing more to assert.
+		return
+	}
+	if net.ParseIP(ip) == nil {
+		t.Errorf("GetLocalIP() = %q, not a valid IP", ip)
+	}
 }
