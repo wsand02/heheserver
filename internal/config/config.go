@@ -17,7 +17,7 @@ const (
 	galleryDesc              string = "Enables the embedded gallery page."
 	defaultGalleryFlag       bool   = false
 	resizeDesc               string = "Enables the image resizing endpoint (uses ffmpeg if present, otherwise a pure-Go fallback); also enables video thumbnails when ffmpeg is on PATH."
-	defaultSplit             int    = 64
+	defaultSplit             int    = 37
 	splitDesc                string = "Max items per page for gallery pagination."
 	defaultResizeFlag        bool   = false
 	defaultIgnoreCacheSize   int64  = 16
