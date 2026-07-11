@@ -5,32 +5,86 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>heheserver gallery</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script>
+      // Set the theme before first paint to avoid a flash of the wrong theme.
+      (function () {
+        var saved = localStorage.getItem("theme");
+        var theme =
+          saved ||
+          (window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+    <link rel="stylesheet" href="/static/glacialwisp.min.css" />
+    <link rel="stylesheet" href="/static/glacialwisp-icons.min.css" />
     <style>
-      /* Optional: smooth scrolling and custom focus ring */
+      /* Smooth scrolling and custom focus ring */
       html {
         scroll-behavior: smooth;
       }
       *:focus-visible {
-        outline: 2px solid #3b82f6;
+        outline: 2px solid var(--color-primary, #23b0ff);
         outline-offset: 2px;
+      }
+      .site-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+      }
+      /* Media sizing helpers (no glacialwisp equivalents). */
+      .media-frame {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #000;
+        min-height: 300px;
+      }
+      .media-contain {
+        width: 100%;
+        max-height: 70vh;
+        object-fit: contain;
+      }
+      .media-cover {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        background: #000;
       }
     </style>
   </head>
-  <body
-    class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300"
-  >
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  <body>
+    <div class="container grid-xl" style="padding: 1.5rem 0.5rem">
+      <header class="site-header">
+        <a href="/" class="h5" style="text-decoration: none">
+          heheserver gallery
+        </a>
+        <button
+          type="button"
+          class="btn btn-action"
+          id="theme-toggle"
+          aria-label="Toggle dark mode"
+          onclick="(function(){var h=document.documentElement;var n=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',n);localStorage.setItem('theme',n);document.getElementById('theme-toggle').textContent=n==='dark'?'☀️':'🌙';})()"
+        ></button>
+      </header>
+      <script>
+        // Match the toggle glyph to the active theme on load.
+        document.getElementById("theme-toggle").textContent =
+          document.documentElement.getAttribute("data-theme") === "dark"
+            ? "☀️"
+            : "🌙";
+      </script>
       {{ end }} {{ define "footer" }}
-      <!-- Optional footer info -->
-      <div
-        class="mt-8 text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-6"
-      >
+      <div class="divider" style="margin-top: 2rem"></div>
+      <footer class="text-center text-gray" style="padding: 1rem 0">
         <p>
           heheserver gallery - a dynamic gallery able to be setup in any
           directory at any moment
         </p>
-      </div>
+      </footer>
     </div>
   </body>
 </html>

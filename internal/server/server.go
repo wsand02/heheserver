@@ -9,6 +9,7 @@ import (
 	"github.com/wsand02/heheserver/internal/config"
 	"github.com/wsand02/heheserver/internal/fs"
 	"github.com/wsand02/heheserver/internal/handlers"
+	"github.com/wsand02/heheserver/internal/templates"
 )
 
 type Server struct {
@@ -49,6 +50,7 @@ func (s *Server) initCache() {
 func (s *Server) setupRoutes() {
 	if s.config.Gallery {
 		fmt.Println("Enabling Gallery")
+		s.mux.Handle("/static/", templates.StaticHandler())
 		s.mux.Handle("/fs/", http.StripPrefix("/fs", http.FileServer(s.hfs)))
 		s.mux.Handle("/post/", s.makeHfsInjector(handlers.PostHandler))
 		s.mux.HandleFunc("/", s.makeHfsInjector(handlers.GalleryHandler))
