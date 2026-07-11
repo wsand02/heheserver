@@ -108,6 +108,34 @@ func TestGalleryServerMode(t *testing.T) {
 	}
 }
 
+// TestGalleryStaticAssets covers issue #16: the gallery must serve its CSS from the
+// embedded /static/ route so styling works with no internet access.
+func TestGalleryStaticAssets(t *testing.T) {
+	dir := setupTestDir(t)
+
+	ts := testServer(t, dir, true, false)
+	client := ts.Client()
+
+	for _, name := range []string{"glacialwisp.min.css", "glacialwisp-icons.min.css"} {
+		resp, err := client.Get(ts.URL + "/static/" + name)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("GET /static/%s => %d, want 200", name, resp.StatusCode)
+		}
+		if ct := resp.Header.Get("Content-Type"); !strings.HasPrefix(ct, "text/css") {
+			t.Fatalf("GET /static/%s content-type = %q, want text/css", name, ct)
+		}
+		if len(body) == 0 {
+			t.Fatalf("GET /static/%s returned empty body", name)
+		}
+	}
+}
+
 // TestGallerySpecialCharFilenames reproduces issue #13: files whose names contain
 // emoji or URL-significant characters must be reachable through the gallery.
 func TestGallerySpecialCharFilenames(t *testing.T) {

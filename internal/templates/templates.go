@@ -3,6 +3,7 @@ package templates
 import (
 	"embed"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/url"
 	"text/template"
@@ -10,6 +11,18 @@ import (
 
 //go:embed *.html
 var templatesFS embed.FS
+
+//go:embed static/*.css
+var staticFS embed.FS
+
+// StaticHandler serves the embedded CSS assets (glacialwisp) under /static/.
+func StaticHandler() http.Handler {
+	sub, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		panic(err) // embedded FS is known at build time; this cannot fail
+	}
+	return http.StripPrefix("/static/", http.FileServer(http.FS(sub)))
+}
 
 func sub(a, b int) int { return a - b }
 func add(a, b int) int { return a + b }
