@@ -8,9 +8,11 @@
   {{ end }}
 </ul>
 
-<div class="columns">
+<div class="grid" data-path="{{ .Path }}" data-page="{{ .CurrentPage }}">
+  <div class="grid-sizer"></div>
+  <div class="gutter-sizer"></div>
   {{ range .Items }}
-  <div class="column col-3 col-md-4 col-sm-6 col-xs-12" style="margin-bottom: 1rem">
+  <div class="grid-item">
     <div class="card">
       {{ if .IsImage }}
       <div class="card-image">
@@ -22,7 +24,6 @@
           {{ end }}
           alt="{{ .Filename }}"
           loading="lazy"
-          class="media-cover"
         />
       </div>
       {{ else if .IsVideo }}
@@ -79,6 +80,15 @@
   {{ end }}
 </div>
 
+<!-- Infinite Scroll status (hidden until JS drives loading; no-JS uses the pagination below). -->
+<div class="page-load-status" aria-live="polite">
+  <div class="infinite-scroll-request">
+    <div class="loading loading-lg"></div>
+  </div>
+  <p class="infinite-scroll-last text-gray">End of gallery</p>
+  <p class="infinite-scroll-error text-gray">Couldn't load more</p>
+</div>
+
 {{ if gt .MaxPage 1 }}
 <ul class="pagination" style="justify-content: center; margin-top: 2rem">
   <!-- Previous -->
@@ -113,7 +123,7 @@
   <!-- Next -->
   {{ if lt .CurrentPage .MaxPage }}
   <li class="page-item">
-    <a href="{{ pageURL .Path (add .CurrentPage 1) }}" aria-label="Next">
+    <a href="{{ pageURL .Path (add .CurrentPage 1) }}" class="pagination__next" aria-label="Next">
       <i class="icon icon-arrow-right"></i>
     </a>
   </li>

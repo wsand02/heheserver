@@ -54,6 +54,60 @@
         object-fit: cover;
         background: #000;
       }
+      /* Masonry fluid-percentage grid. Items float as a rough grid without JS;
+         Masonry absolutely-positions them once it initializes. */
+      .grid-sizer,
+      .grid-item {
+        width: 24%;
+      }
+      .gutter-sizer {
+        width: 1.33%;
+      }
+      .grid-item {
+        margin-bottom: 1rem;
+        float: left;
+      }
+      .grid-item .card-image img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      @media (max-width: 960px) {
+        .grid-sizer,
+        .grid-item {
+          width: 32%;
+        }
+        .gutter-sizer {
+          width: 2%;
+        }
+      }
+      @media (max-width: 600px) {
+        .grid-sizer,
+        .grid-item {
+          width: 49%;
+        }
+        .gutter-sizer {
+          width: 2%;
+        }
+      }
+      @media (max-width: 480px) {
+        .grid-sizer,
+        .grid-item {
+          width: 100%;
+        }
+      }
+      /* Infinite Scroll status. Parent and all three states hidden by default;
+         Infinite Scroll reveals the active one via inline display. */
+      .page-load-status {
+        display: none;
+        padding: 1.5rem 0;
+        text-align: center;
+      }
+      .infinite-scroll-request,
+      .infinite-scroll-last,
+      .infinite-scroll-error {
+        display: none;
+      }
       /* Visited links should look identical to unvisited ones (issue #22). */
       a:visited {
         color: #23b0ff;
@@ -96,6 +150,48 @@
         </p>
       </footer>
     </div>
+    <script src="/static/masonry.pkgd.min.js"></script>
+    <script src="/static/imagesloaded.pkgd.min.js"></script>
+    <script src="/static/infinite-scroll.pkgd.min.js"></script>
+    <script>
+      (function () {
+        var grid = document.querySelector(".grid");
+        if (!grid) return; // post.html shares base — no grid there
+        var msnry = new Masonry(grid, {
+          itemSelector: ".grid-item",
+          columnWidth: ".grid-sizer",
+          gutter: ".gutter-sizer",
+          percentPosition: true,
+        });
+        imagesLoaded(grid).on("progress", function () {
+          msnry.layout();
+        });
+        if (document.querySelector(".pagination__next")) {
+          var dirPath = grid.getAttribute("data-path") || "";
+          var startPage = parseInt(grid.getAttribute("data-page"), 10) || 1;
+          new InfiniteScroll(grid, {
+            // Build the next-page URL explicitly from the real page number.
+            // A selector/template path makes Infinite Scroll hunt for "the
+            // number" in the URL, but digits inside percent-encoded path
+            // segments (e.g. %2F, %3F) fool that heuristic and corrupt ?path=.
+            path: function () {
+              return (
+                "?path=" +
+                encodeURIComponent(dirPath) +
+                "&p=" +
+                (startPage + this.loadCount + 1)
+              );
+            },
+            checkLastPage: ".pagination__next", // stop when a page has no Next link
+            status: ".page-load-status", // loading / end / error indicator
+            append: ".grid-item",
+            outlayer: msnry, // appended items get imagesLoaded + masonry.appended()
+            history: false,
+            hideNav: ".pagination", // hide server pagination once JS drives loading
+          });
+        }
+      })();
+    </script>
   </body>
 </html>
 {{ end }}
