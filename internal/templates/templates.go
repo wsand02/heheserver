@@ -15,9 +15,11 @@ import (
 var templatesFS embed.FS
 
 //go:embed static/*.css
+//go:embed static/*.js
 var staticFS embed.FS
 
-// StaticHandler serves the embedded CSS assets (glacialwisp) under /static/.
+// StaticHandler serves the embedded static assets (glacialwisp CSS plus the
+// masonry/imagesLoaded/infinite-scroll JS) under /static/.
 func StaticHandler() http.Handler {
 	sub, err := fs.Sub(staticFS, "static")
 	if err != nil {

@@ -54,6 +54,48 @@
         object-fit: cover;
         background: #000;
       }
+      /* Masonry fluid-percentage grid. Items float as a rough grid without JS;
+         Masonry absolutely-positions them once it initializes. */
+      .grid-sizer,
+      .grid-item {
+        width: 24%;
+      }
+      .gutter-sizer {
+        width: 1.33%;
+      }
+      .grid-item {
+        margin-bottom: 1rem;
+        float: left;
+      }
+      .grid-item .card-image img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      @media (max-width: 960px) {
+        .grid-sizer,
+        .grid-item {
+          width: 32%;
+        }
+        .gutter-sizer {
+          width: 2%;
+        }
+      }
+      @media (max-width: 600px) {
+        .grid-sizer,
+        .grid-item {
+          width: 49%;
+        }
+        .gutter-sizer {
+          width: 2%;
+        }
+      }
+      @media (max-width: 480px) {
+        .grid-sizer,
+        .grid-item {
+          width: 100%;
+        }
+      }
       /* Visited links should look identical to unvisited ones (issue #22). */
       a:visited {
         color: #23b0ff;
@@ -96,6 +138,33 @@
         </p>
       </footer>
     </div>
+    <script src="/static/masonry.pkgd.min.js"></script>
+    <script src="/static/imagesloaded.pkgd.min.js"></script>
+    <script src="/static/infinite-scroll.pkgd.min.js"></script>
+    <script>
+      (function () {
+        var grid = document.querySelector(".grid");
+        if (!grid) return; // post.html shares base — no grid there
+        var msnry = new Masonry(grid, {
+          itemSelector: ".grid-item",
+          columnWidth: ".grid-sizer",
+          gutter: ".gutter-sizer",
+          percentPosition: true,
+        });
+        imagesLoaded(grid).on("progress", function () {
+          msnry.layout();
+        });
+        if (document.querySelector(".pagination__next")) {
+          new InfiniteScroll(grid, {
+            path: ".pagination__next", // reads href, auto-chains via each page's Next link
+            append: ".grid-item",
+            outlayer: msnry, // appended items get imagesLoaded + masonry.appended()
+            history: false,
+            hideNav: ".pagination", // hide server pagination once JS drives loading
+          });
+        }
+      })();
+    </script>
   </body>
 </html>
 {{ end }}
