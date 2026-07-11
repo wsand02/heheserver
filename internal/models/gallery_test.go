@@ -2,6 +2,84 @@ package models
 
 import "testing"
 
+func TestGalleryItem_TypeCategory(t *testing.T) {
+	tests := []struct {
+		name     string
+		filename string
+		isDir    bool
+		want     string
+	}{
+		{"dir", "photos", true, "dir"},
+		{"image", "cat.png", false, "image"},
+		{"video", "clip.mp4", false, "video"},
+		{"audio", "song.ogg", false, "audio"},
+		{"other", "notes.txt", false, "other"},
+		// a directory named like an image is still a dir
+		{"dir with image ext", "album.png", true, "dir"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gi := GalleryItem{Filename: tt.filename, IsDir: tt.isDir}
+			if got := gi.TypeCategory(); got != tt.want {
+				t.Errorf("TypeCategory() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGalleryFilter_Active(t *testing.T) {
+	tests := []struct {
+		name string
+		f    GalleryFilter
+		want bool
+	}{
+		{"empty", GalleryFilter{}, false},
+		{"types", GalleryFilter{Types: map[string]bool{"image": true}}, true},
+		{"query", GalleryFilter{Query: "cat"}, true},
+		{"exts", GalleryFilter{Exts: map[string]bool{".png": true}}, true},
+		{"empty maps", GalleryFilter{Types: map[string]bool{}, Exts: map[string]bool{}}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.f.Active(); got != tt.want {
+				t.Errorf("Active() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGalleryFilter_Matches(t *testing.T) {
+	img := GalleryItem{Filename: "Cat.PNG"}
+	vid := GalleryItem{Filename: "clip.mp4"}
+	dir := GalleryItem{Filename: "album", IsDir: true}
+
+	tests := []struct {
+		name string
+		f    GalleryFilter
+		gi   GalleryItem
+		want bool
+	}{
+		{"empty matches all", GalleryFilter{}, img, true},
+		{"type image matches image", GalleryFilter{Types: map[string]bool{"image": true}}, img, true},
+		{"type image rejects video", GalleryFilter{Types: map[string]bool{"image": true}}, vid, false},
+		{"type dir matches dir", GalleryFilter{Types: map[string]bool{"dir": true}}, dir, true},
+		{"query case-insensitive substring", GalleryFilter{Query: "cat"}, img, true},
+		{"query no match", GalleryFilter{Query: "dog"}, img, false},
+		{"ext with dot matches (case-insensitive)", GalleryFilter{Exts: map[string]bool{".png": true}}, img, true},
+		{"ext no match", GalleryFilter{Exts: map[string]bool{".jpg": true}}, img, false},
+		{"AND: type and query both pass", GalleryFilter{Types: map[string]bool{"image": true}, Query: "cat"}, img, true},
+		{"AND: type passes but query fails", GalleryFilter{Types: map[string]bool{"image": true}, Query: "dog"}, img, false},
+		{"AND: type and ext conflict -> no match", GalleryFilter{Types: map[string]bool{"image": true}, Exts: map[string]bool{".mp4": true}}, img, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.f.Matches(&tt.gi); got != tt.want {
+				t.Errorf("Matches() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestGalleryItem_SizeMB(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case

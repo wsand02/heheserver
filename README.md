@@ -15,6 +15,7 @@ authentication or other security features required for safe exposure to the publ
 - Single static binary
 - `.heheignore` file omission — matching files are hidden from every directory index *and* made un-openable, as if they don't exist
 - Optional embedded gallery for images, video, and audio, with thumbnails and a single-item post view
+- Filter the gallery by file type, filename, or extension — updates in realtime, with a no-JavaScript fallback
 - Pagination for large directories
 - Optional on-the-fly image resizing (pure-Go fallback, accelerated by ffmpeg when present)
 - Video thumbnails when ffmpeg is available
@@ -61,7 +62,7 @@ heheserver [options] [path]
 
 `-r` or `-resize` Enables the image resizing endpoint. Uses ffmpeg if it's on your `PATH`, otherwise a pure-Go fallback. When ffmpeg is present this also enables video thumbnails. (default omitted => false)
 
-`-s` or `-split` Max items per page for gallery pagination. (default 64)
+`-s` or `-split` Max items per page for gallery pagination. (default 48)
 
 `-igncache` Size of ignore cache in megabytes, approximate. (default 16)
 
@@ -101,6 +102,18 @@ Add `-r` to enable on-the-fly image resizing (used for thumbnails). If ffmpeg is
 `PATH`, video thumbnails are generated too; otherwise image resizing falls back to a pure-Go
 implementation and video thumbnails are skipped. The current version is shown in the footer,
 linking back to this repository.
+
+### Filtering
+
+A filter bar above the grid narrows the current directory by **file type** (image / video /
+audio / folder / other), **filename** (case-insensitive substring), and **file extension**
+(comma-separated, e.g. `.png, .mp4`). Multiple filters combine with AND. Filtering is done on
+the server across the *whole* directory (not just the pages already loaded), so it stays
+correct for large directories and works together with pagination and infinite scroll.
+
+With JavaScript the results update in realtime as you type or toggle a checkbox, and the URL
+stays in sync so a filtered view is shareable and reloadable. With JavaScript disabled the same
+filter bar still works as a plain form — press **Apply** to reload the filtered listing.
 
 Supported types:
 
