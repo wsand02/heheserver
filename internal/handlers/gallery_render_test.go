@@ -54,6 +54,27 @@ func TestListNestedBreadcrumbs(t *testing.T) {
 	}
 }
 
+// TestListHasResultsWrapper guards the realtime-filter swap target: the grid,
+// status, and pagination must live inside #gallery-results (and the filter form
+// must stay outside it, so its focused input survives a swap).
+func TestListHasResultsWrapper(t *testing.T) {
+	gc := &GalleryContext{Path: "/", CurrentPage: 1, MaxPage: 1}
+	body := renderList(t, gc)
+
+	if !strings.Contains(body, `id="gallery-results"`) {
+		t.Fatal("missing #gallery-results swap container")
+	}
+	formIdx := strings.Index(body, `class="filter-bar"`)
+	resultsIdx := strings.Index(body, `id="gallery-results"`)
+	gridIdx := strings.Index(body, `class="grid"`)
+	if formIdx == -1 || formIdx > resultsIdx {
+		t.Error("filter form must render before (outside) #gallery-results")
+	}
+	if gridIdx < resultsIdx {
+		t.Error("grid must render inside #gallery-results")
+	}
+}
+
 // TestListEscapesFilename is the reason for the html/template switch: a
 // user-controlled filename containing markup must be rendered as inert text, not
 // injected as live HTML.

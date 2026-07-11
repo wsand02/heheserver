@@ -35,6 +35,10 @@
   </div>
 </form>
 
+<!-- Swappable results region: realtime filtering refetches the gallery and
+     replaces this container's contents (see base.html). The filter form above
+     stays put so the focused input keeps focus while typing. -->
+<div id="gallery-results">
 <div
   class="grid"
   data-path="{{ .Path }}"
@@ -171,4 +175,6 @@
   </li>
   {{ end }}
 </ul>
-{{ end }} {{ template "footer" . }}
+{{ end }}
+</div>
+{{ template "footer" . }}

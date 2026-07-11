@@ -190,53 +190,147 @@
     <script src="/static/infinite-scroll.pkgd.min.js"></script>
     <script>
       (function () {
-        var grid = document.querySelector(".grid");
-        if (!grid) return; // post.html shares base — no grid there
-        var msnry = new Masonry(grid, {
-          itemSelector: ".grid-item",
-          columnWidth: ".grid-sizer",
-          gutter: ".gutter-sizer",
-          percentPosition: true,
-        });
-        imagesLoaded(grid).on("progress", function () {
-          msnry.layout();
-        });
-        if (document.querySelector(".pagination__next")) {
-          var dirPath = grid.getAttribute("data-path") || "";
-          var startPage = parseInt(grid.getAttribute("data-page"), 10) || 1;
-          // Active filters, carried forward so later pages stay filtered.
-          var filterType = grid.getAttribute("data-type") || "";
-          var filterQuery = grid.getAttribute("data-query") || "";
-          var filterExt = grid.getAttribute("data-ext") || "";
-          new InfiniteScroll(grid, {
-            // Build the next-page URL explicitly from the real page number.
-            // A selector/template path makes Infinite Scroll hunt for "the
-            // number" in the URL, but digits inside percent-encoded path
-            // segments (e.g. %2F, %3F) fool that heuristic and corrupt ?path=.
-            path: function () {
-              var url =
-                "?path=" +
-                encodeURIComponent(dirPath) +
-                "&p=" +
-                (startPage + this.loadCount + 1);
-              // data-type is a comma-joined list; emit one type= per value.
-              if (filterType) {
-                filterType.split(",").forEach(function (t) {
-                  url += "&type=" + encodeURIComponent(t);
-                });
-              }
-              if (filterQuery) url += "&q=" + encodeURIComponent(filterQuery);
-              if (filterExt) url += "&ext=" + encodeURIComponent(filterExt);
-              return url;
-            },
-            checkLastPage: ".pagination__next", // stop when a page has no Next link
-            status: ".page-load-status", // loading / end / error indicator
-            append: ".grid-item",
-            outlayer: msnry, // appended items get imagesLoaded + masonry.appended()
-            history: false,
-            hideNav: ".pagination", // hide server pagination once JS drives loading
+        var container = document.getElementById("gallery-results");
+        if (!container) return; // post.html shares base — no results grid there
+
+        // The filter form lives outside #gallery-results, so it survives the
+        // realtime swap and its focused input keeps focus while typing.
+        var form = document.querySelector(".filter-bar");
+        var msnry = null;
+        var infScroll = null;
+
+        // (Re)initialize masonry + infinite scroll on the current grid. Called
+        // on first load and after every realtime results swap.
+        function initGallery() {
+          var grid = container.querySelector(".grid");
+          if (!grid) return;
+          msnry = new Masonry(grid, {
+            itemSelector: ".grid-item",
+            columnWidth: ".grid-sizer",
+            gutter: ".gutter-sizer",
+            percentPosition: true,
           });
+          imagesLoaded(grid).on("progress", function () {
+            msnry.layout();
+          });
+          if (container.querySelector(".pagination__next")) {
+            var dirPath = grid.getAttribute("data-path") || "";
+            var startPage = parseInt(grid.getAttribute("data-page"), 10) || 1;
+            // Applied filters (from the server-rendered grid), carried forward
+            // so later infinite-scroll pages stay filtered.
+            var filterType = grid.getAttribute("data-type") || "";
+            var filterQuery = grid.getAttribute("data-query") || "";
+            var filterExt = grid.getAttribute("data-ext") || "";
+            infScroll = new InfiniteScroll(grid, {
+              // Build the next-page URL explicitly from the real page number.
+              // A selector/template path makes Infinite Scroll hunt for "the
+              // number" in the URL, but digits inside percent-encoded path
+              // segments (e.g. %2F, %3F) fool that heuristic and corrupt ?path=.
+              path: function () {
+                var url =
+                  "?path=" +
+                  encodeURIComponent(dirPath) +
+                  "&p=" +
+                  (startPage + this.loadCount + 1);
+                // data-type is a comma-joined list; emit one type= per value.
+                if (filterType) {
+                  filterType.split(",").forEach(function (t) {
+                    url += "&type=" + encodeURIComponent(t);
+                  });
+                }
+                if (filterQuery) url += "&q=" + encodeURIComponent(filterQuery);
+                if (filterExt) url += "&ext=" + encodeURIComponent(filterExt);
+                return url;
+              },
+              checkLastPage: ".pagination__next", // stop when a page has no Next link
+              status: ".page-load-status", // loading / end / error indicator
+              append: ".grid-item",
+              outlayer: msnry, // appended items get imagesLoaded + masonry.appended()
+              history: false,
+              hideNav: ".pagination", // hide server pagination once JS drives loading
+            });
+          }
         }
+
+        // Tear down the current instances before swapping in new results, so we
+        // don't leak listeners or stack duplicate InfiniteScroll watchers.
+        function destroyGallery() {
+          if (infScroll) {
+            infScroll.destroy();
+            infScroll = null;
+          }
+          if (msnry) {
+            msnry.destroy();
+            msnry = null;
+          }
+        }
+
+        // Build a page-1 gallery URL from the live filter form.
+        function formURL() {
+          var params = new URLSearchParams();
+          params.set("path", form.elements["path"].value);
+          Array.prototype.forEach.call(
+            form.querySelectorAll('input[name="type"]:checked'),
+            function (cb) {
+              params.append("type", cb.value);
+            }
+          );
+          var q = form.elements["q"].value.trim();
+          if (q) params.set("q", q);
+          var ext = form.elements["ext"].value.trim();
+          if (ext) params.set("ext", ext);
+          return "?" + params.toString();
+        }
+
+        // Realtime refetch: pull the filtered gallery and swap in its results.
+        // A token guards against out-of-order responses (fast typing).
+        var refetchToken = 0;
+        function refilter() {
+          if (!form) return;
+          var url = formURL();
+          var token = ++refetchToken;
+          container.setAttribute("aria-busy", "true");
+          fetch(url, { headers: { "X-Requested-With": "fetch" } })
+            .then(function (r) {
+              return r.text();
+            })
+            .then(function (html) {
+              if (token !== refetchToken) return; // superseded by a newer request
+              var doc = new DOMParser().parseFromString(html, "text/html");
+              var fresh = doc.getElementById("gallery-results");
+              if (!fresh) return;
+              destroyGallery();
+              container.innerHTML = fresh.innerHTML;
+              initGallery();
+              container.removeAttribute("aria-busy");
+              // Keep the address bar in sync so the filtered view is shareable
+              // and reloadable. replaceState (not push) avoids a history entry
+              // per keystroke.
+              history.replaceState(null, "", url);
+            })
+            .catch(function () {
+              if (token === refetchToken) container.removeAttribute("aria-busy");
+            });
+        }
+
+        var debounceTimer;
+        function debouncedRefilter() {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(refilter, 200);
+        }
+
+        if (form) {
+          // The form still submits normally with JS disabled (no-JS fallback).
+          form.addEventListener("submit", function (e) {
+            e.preventDefault();
+            clearTimeout(debounceTimer);
+            refilter();
+          });
+          // input fires for both text fields (per keystroke) and checkboxes.
+          form.addEventListener("input", debouncedRefilter);
+        }
+
+        initGallery();
       })();
     </script>
   </body>
