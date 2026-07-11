@@ -8,7 +8,7 @@
   {{ end }}
 </ul>
 
-<div class="grid">
+<div class="grid" data-path="{{ .Path }}" data-page="{{ .CurrentPage }}">
   <div class="grid-sizer"></div>
   <div class="gutter-sizer"></div>
   {{ range .Items }}

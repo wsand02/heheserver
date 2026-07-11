@@ -155,8 +155,22 @@
           msnry.layout();
         });
         if (document.querySelector(".pagination__next")) {
+          var dirPath = grid.getAttribute("data-path") || "";
+          var startPage = parseInt(grid.getAttribute("data-page"), 10) || 1;
           new InfiniteScroll(grid, {
-            path: ".pagination__next", // reads href, auto-chains via each page's Next link
+            // Build the next-page URL explicitly from the real page number.
+            // A selector/template path makes Infinite Scroll hunt for "the
+            // number" in the URL, but digits inside percent-encoded path
+            // segments (e.g. %2F, %3F) fool that heuristic and corrupt ?path=.
+            path: function () {
+              return (
+                "?path=" +
+                encodeURIComponent(dirPath) +
+                "&p=" +
+                (startPage + this.loadCount + 1)
+              );
+            },
+            checkLastPage: ".pagination__next", // stop when a page has no Next link
             append: ".grid-item",
             outlayer: msnry, // appended items get imagesLoaded + masonry.appended()
             history: false,
