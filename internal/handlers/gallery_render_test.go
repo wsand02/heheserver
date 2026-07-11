@@ -31,6 +31,29 @@ func renderPost(t *testing.T, pc *PostContext) string {
 	return w.Body.String()
 }
 
+// countBreadcrumbs returns how many breadcrumb <li> items the rendered body has.
+func countBreadcrumbs(body string) int {
+	return strings.Count(body, `class="breadcrumb-item"`)
+}
+
+// TestListRootBreadcrumbsNoDuplicates guards against the split("/", "/") == ["", ""]
+// bug that rendered "Home" plus two empty breadcrumb items on the root page.
+func TestListRootBreadcrumbsNoDuplicates(t *testing.T) {
+	gc := &GalleryContext{Path: "/", CurrentPage: 1, MaxPage: 1}
+	if n := countBreadcrumbs(renderList(t, gc)); n != 1 {
+		t.Errorf("root page: expected 1 breadcrumb (Home), got %d", n)
+	}
+}
+
+// TestListNestedBreadcrumbs checks a nested path yields exactly Home + one crumb
+// per path segment, with no stray empty leading crumb.
+func TestListNestedBreadcrumbs(t *testing.T) {
+	gc := &GalleryContext{Path: "/foo/bar/", CurrentPage: 1, MaxPage: 1}
+	if n := countBreadcrumbs(renderList(t, gc)); n != 3 {
+		t.Errorf("/foo/bar/: expected 3 breadcrumbs (Home, foo, bar), got %d", n)
+	}
+}
+
 // TestListEscapesFilename is the reason for the html/template switch: a
 // user-controlled filename containing markup must be rendered as inert text, not
 // injected as live HTML.
