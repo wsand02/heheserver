@@ -96,6 +96,18 @@
           width: 100%;
         }
       }
+      /* Infinite Scroll status. Parent and all three states hidden by default;
+         Infinite Scroll reveals the active one via inline display. */
+      .page-load-status {
+        display: none;
+        padding: 1.5rem 0;
+        text-align: center;
+      }
+      .infinite-scroll-request,
+      .infinite-scroll-last,
+      .infinite-scroll-error {
+        display: none;
+      }
       /* Visited links should look identical to unvisited ones (issue #22). */
       a:visited {
         color: #23b0ff;
@@ -171,6 +183,7 @@
               );
             },
             checkLastPage: ".pagination__next", // stop when a page has no Next link
+            status: ".page-load-status", // loading / end / error indicator
             append: ".grid-item",
             outlayer: msnry, // appended items get imagesLoaded + masonry.appended()
             history: false,

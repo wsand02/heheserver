@@ -80,6 +80,15 @@
   {{ end }}
 </div>
 
+<!-- Infinite Scroll status (hidden until JS drives loading; no-JS uses the pagination below). -->
+<div class="page-load-status" aria-live="polite">
+  <div class="infinite-scroll-request">
+    <div class="loading loading-lg"></div>
+  </div>
+  <p class="infinite-scroll-last text-gray">End of gallery</p>
+  <p class="infinite-scroll-error text-gray">Couldn't load more</p>
+</div>
+
 {{ if gt .MaxPage 1 }}
 <ul class="pagination" style="justify-content: center; margin-top: 2rem">
   <!-- Previous -->
