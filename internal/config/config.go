@@ -16,7 +16,7 @@ const (
 	defaultHost              string = "0.0.0.0"
 	galleryDesc              string = "Enables the embedded gallery page."
 	defaultGalleryFlag       bool   = false
-	resizeDesc               string = "Enables the experimental image resizing endpoint, requires ffmpeg on path."
+	resizeDesc               string = "Enables the image resizing endpoint (uses ffmpeg if present, otherwise a pure-Go fallback); also enables video thumbnails when ffmpeg is on PATH."
 	defaultSplit             int    = 64
 	splitDesc                string = "Max items per page for gallery pagination."
 	defaultResizeFlag        bool   = false
