@@ -38,11 +38,11 @@ Entry point `main.go` → `config.ParseFromFlags()` → `server.NewServer(cfg)` 
 
 **Thumbnailing** (`internal/resize`, `internal/vidthumb`, plus the matching handlers): prefers shelling out to `ffmpeg` when it's on PATH (`utils.FFmpegExists()` is checked once at config time into `Config.FFmpegExists`). Image resize falls back to a pure-Go `golang.org/x/image/draw` path when ffmpeg is absent; video thumbnails require ffmpeg and the route is only registered when it exists.
 
-**View layer**: `internal/models/gallery.go` (`GalleryItem` with type predicates like `IsImage`/`IsVideo` and URL builders) feeds `internal/templates` (Go `text/template` files embedded via `//go:embed *.html`). Custom template funcs for pagination/arithmetic live in `templates.go`.
+**View layer**: `internal/models/gallery.go` (`GalleryItem` with type predicates like `IsImage`/`IsVideo` and URL builders) feeds `internal/templates` (Go `html/template` files embedded via `//go:embed *.html`). Custom template funcs for pagination/arithmetic live in `templates.go`.
 
 ## Conventions and gotchas
 
 - **Path handling is security-sensitive.** URL/query path escaping is centralized in `models.escapeQueryPath`/`escapeURLPath`; the fs and vidthumb handlers replicate Go stdlib's `Open` localization logic (`path.Clean`, `filepath.Localize`) to avoid traversal. Preserve this when touching path construction — emoji/special-character filenames have already caused 404 regressions.
-- Templates use `text/template`, not `html/template` — output is not auto-escaped.
+- Templates use `html/template`, so output is contextually auto-escaped (user-controlled filenames render as inert text, not live HTML). This does **not** replace the manual URL escaping: the URL builders (`escapeQueryPath`/`escapeURLPath`, `BreadcrumbToUrl`, `pageURL`) do the semantic query-value vs. path-segment encoding, and `html/template` preserves those already-escaped `%XX` values while adding HTML-context escaping on top. Keep both layers.
 - New file-type support usually means updating the predicate methods on `GalleryItem` and the relevant template.
 - Start bug fixes with a failing test derived from the issue (see the race tests in `internal/ignore` and `internal/fs` for the pattern).
