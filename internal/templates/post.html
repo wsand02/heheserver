@@ -2,9 +2,15 @@
 
 <div class="columns">
   <div class="column col-8 col-md-12 col-mx-auto">
-    <!-- Back navigation -->
+    <!-- Back navigation. Real href to the containing directory is the no-JS
+         (and open-in-new-tab) fallback; with JS and real history, prefer
+         history.back() so the exact filtered/scrolled gallery is restored. -->
     <div class="mb-2">
-      <a href="javascript:history.back()" class="btn btn-link">
+      <a
+        href="{{ .GalleryURL }}"
+        class="btn btn-link"
+        onclick="if(history.length>1){history.back();return false;}"
+      >
         <i class="icon icon-back"></i> Back to gallery
       </a>
     </div>

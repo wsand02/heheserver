@@ -224,6 +224,23 @@ func TestGalleryPageURLKeepsFilter(t *testing.T) {
 	}
 }
 
+func TestPostContextGalleryURL(t *testing.T) {
+	cases := []struct {
+		path string
+		want string
+	}{
+		{"/folder/file.png", "?path=%2Ffolder%2F"},
+		{"/file.png", "?path=%2F"},
+		{"/a/b/c.mp4", "?path=%2Fa%2Fb%2F"},
+	}
+	for _, c := range cases {
+		pc := &PostContext{models.GalleryItem{Path: c.path}}
+		if got := pc.GalleryURL(); got != c.want {
+			t.Errorf("GalleryURL(%q) = %q, want %q", c.path, got, c.want)
+		}
+	}
+}
+
 func TestPostHandler(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "hello.txt"), []byte("hi"), 0644); err != nil {

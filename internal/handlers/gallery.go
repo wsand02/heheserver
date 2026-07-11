@@ -235,6 +235,21 @@ type PostContext struct {
 	models.GalleryItem
 }
 
+// GalleryURL is the listing URL for the directory containing this item. It backs
+// the "Back to gallery" link's no-JS fallback (with JS, the link prefers
+// history.back() so the exact filtered/scrolled gallery state is restored).
+// Here Path is the item's full path (e.g. "/folder/file.png"), so we strip the
+// trailing filename to get the directory.
+func (pc *PostContext) GalleryURL() string {
+	dir := "/"
+	if i := strings.LastIndex(strings.TrimSuffix(pc.Path, "/"), "/"); i >= 0 {
+		dir = pc.Path[:i+1]
+	}
+	q := url.Values{}
+	q.Set("path", dir)
+	return "?" + q.Encode()
+}
+
 func PostHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
 	hf, err := hfs.Open(ctx)
 	if err != nil {
