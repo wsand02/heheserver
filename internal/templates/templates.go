@@ -7,6 +7,8 @@ import (
 	"io/fs"
 	"net/http"
 	"net/url"
+
+	"github.com/wsand02/heheserver/internal/version"
 )
 
 //go:embed *.html
@@ -63,7 +65,8 @@ var templates = template.Must(template.New("").Funcs(template.FuncMap{"sub": sub
 	"ge":      ge,
 	"le":      le,
 	"pageURL": pageURL,
-	"seq":     seq}).ParseFS(templatesFS, "*.html"))
+	"seq":     seq,
+	"version": version.GetVersion}).ParseFS(templatesFS, "*.html"))
 
 func RenderTemplate(w http.ResponseWriter, tmpl string, ctx any) {
 	err := templates.ExecuteTemplate(w, tmpl+".html", ctx)
