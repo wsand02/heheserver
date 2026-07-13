@@ -29,12 +29,6 @@
         outline: 2px solid var(--color-primary, #23b0ff);
         outline-offset: 2px;
       }
-      .site-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1rem;
-      }
       /* Media sizing helpers (no glacialwisp equivalents). */
       .media-frame {
         display: flex;
@@ -151,17 +145,19 @@
   </head>
   <body>
     <div class="container grid-xl" style="padding: 1.5rem 0.5rem">
-      <header class="site-header">
-        <a href="/" class="h5" style="text-decoration: none">
-          heheserver gallery
-        </a>
-        <button
-          type="button"
-          class="btn btn-action"
-          id="theme-toggle"
-          aria-label="Toggle dark mode"
-          onclick="(function(){var h=document.documentElement;var n=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',n);localStorage.setItem('theme',n);document.getElementById('theme-toggle').textContent=n==='dark'?'☀️':'🌙';})()"
-        ></button>
+      <header class="navbar" style="margin-bottom: 1rem">
+        <section class="navbar-section">
+          <a href="/" class="navbar-brand">heheserver gallery</a>
+        </section>
+        <section class="navbar-section">
+          <button
+            type="button"
+            class="btn btn-action"
+            id="theme-toggle"
+            aria-label="Toggle dark mode"
+            onclick="(function(){var h=document.documentElement;var n=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',n);localStorage.setItem('theme',n);document.getElementById('theme-toggle').textContent=n==='dark'?'☀️':'🌙';})()"
+          ></button>
+        </section>
       </header>
       <script>
         // Match the toggle glyph to the active theme on load.
