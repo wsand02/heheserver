@@ -67,8 +67,9 @@
       <div class="card-image">
         <video
           controls
-          preload="none"
-          loading="lazy"
+          loop
+          playsinline
+          preload="metadata"
           {{ if and $.Resize $.FFmpegExists }}
           poster="{{ .GetVidThumb }}"
           {{ end }}

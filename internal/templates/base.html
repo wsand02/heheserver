@@ -48,10 +48,14 @@
         max-height: 70vh;
         object-fit: contain;
       }
+      /* aspect-ratio here is only a placeholder box until the video's real
+         dimensions load (see the loadedmetadata handler in the gallery JS,
+         which overrides it per-video). object-fit:contain letterboxes rather
+         than cropping non-16:9 clips. */
       .media-cover {
         width: 100%;
         aspect-ratio: 16 / 9;
-        object-fit: cover;
+        object-fit: contain;
         background: #000;
       }
       /* Masonry fluid-percentage grid. Items float as a rough grid without JS;
@@ -213,6 +217,21 @@
           imagesLoaded(grid).on("progress", function () {
             msnry.layout();
           });
+          // imagesLoaded ignores <video>, so size video tiles to their real
+          // aspect ratio once metadata (not the whole file) loads and relayout.
+          // Capture phase because loadedmetadata doesn't bubble; one listener on
+          // the grid also catches infinite-scroll-appended videos.
+          grid.addEventListener(
+            "loadedmetadata",
+            function (e) {
+              var v = e.target;
+              if (v.tagName === "VIDEO" && v.videoWidth) {
+                v.style.aspectRatio = v.videoWidth + " / " + v.videoHeight;
+                if (msnry) msnry.layout();
+              }
+            },
+            true
+          );
           if (container.querySelector(".pagination__next")) {
             var dirPath = grid.getAttribute("data-path") || "";
             var startPage = parseInt(grid.getAttribute("data-page"), 10) || 1;

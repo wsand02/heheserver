@@ -130,6 +130,41 @@ func TestListSpecialCharURLsNotBroken(t *testing.T) {
 	}
 }
 
+// TestListVideoAttributes guards the grid <video> playback attributes: videos
+// must play inline (playsinline), loop, and preload metadata so a single tap
+// plays and real dimensions are available for aspect-ratio sizing. The invalid
+// loading="lazy" (a no-op on <video>) must be gone.
+func TestListVideoAttributes(t *testing.T) {
+	gc := &GalleryContext{
+		Items:       []models.GalleryItem{{Filename: "clip.mp4", Path: "/"}},
+		CurrentPage: 1,
+		MaxPage:     1,
+	}
+	body := renderList(t, gc)
+
+	for _, attr := range []string{"playsinline", "loop", `preload="metadata"`} {
+		if !strings.Contains(body, attr) {
+			t.Errorf("grid video missing %q, got:\n%s", attr, body)
+		}
+	}
+	if strings.Contains(body, `loading="lazy"`) {
+		t.Errorf("grid video still has invalid loading=\"lazy\", got:\n%s", body)
+	}
+}
+
+// TestPostVideoAttributes guards the single-item view's <video>: it should also
+// play inline and loop, consistent with the grid.
+func TestPostVideoAttributes(t *testing.T) {
+	pc := &PostContext{models.GalleryItem{Filename: "clip.mp4", Path: "/clip.mp4"}}
+	body := renderPost(t, pc)
+
+	for _, attr := range []string{"playsinline", "loop"} {
+		if !strings.Contains(body, attr) {
+			t.Errorf("post video missing %q, got:\n%s", attr, body)
+		}
+	}
+}
+
 // TestPostSpecialCharURLsNotBroken does the same guard for the single-item view.
 func TestPostSpecialCharURLsNotBroken(t *testing.T) {
 	pc := &PostContext{models.GalleryItem{Filename: "a b 😀.txt", Path: "/sub dir/"}}
