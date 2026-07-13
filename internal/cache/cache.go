@@ -5,11 +5,10 @@ import (
 	"log"
 
 	"github.com/dgraph-io/ristretto/v2"
-	ignore "github.com/wsand02/go-gitignore"
 )
 
 type IgnoreCache struct {
-	*ristretto.Cache[string, *ignore.GitIgnore]
+	*ristretto.Cache[string, []string]
 }
 
 var ignoreCache *IgnoreCache
@@ -47,7 +46,7 @@ func GetResizeCache() *ResizeCache {
 
 func NewIgnoreCache(size int64) error {
 	size, nc := sizeToNCMB(size)
-	cache, err := ristretto.NewCache(&ristretto.Config[string, *ignore.GitIgnore]{
+	cache, err := ristretto.NewCache(&ristretto.Config[string, []string]{
 		NumCounters: nc,   // 1000*10 seems ok for heheignore files...
 		MaxCost:     size, // 16MB
 		BufferItems: 64,

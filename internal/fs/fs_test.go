@@ -77,6 +77,49 @@ func TestSubDirectory(t *testing.T) {
 	defer file.Close()
 }
 
+func TestOpenNegatedAcrossFiles(t *testing.T) {
+	dir := t.TempDir()
+	cache.NewIgnoreCache(16)
+	os.WriteFile(filepath.Join(dir, ".heheignore"), []byte("*\n"), 0644)
+	subdir := filepath.Join(dir, "subdir")
+	os.Mkdir(subdir, 0755)
+	os.WriteFile(filepath.Join(subdir, ".heheignore"), []byte("!keep.txt\n"), 0644)
+	os.WriteFile(filepath.Join(subdir, "keep.txt"), []byte("keep"), 0644)
+	os.WriteFile(filepath.Join(subdir, "other.txt"), []byte("nope"), 0644)
+
+	hfs := Dir(dir)
+
+	keep, err := hfs.Open("subdir/keep.txt")
+	if err != nil {
+		t.Fatalf("expected subdir/keep.txt to be re-included by negation, got %v", err)
+	}
+	keep.Close()
+
+	if _, err := hfs.Open("subdir/other.txt"); err == nil {
+		t.Fatal("expected subdir/other.txt to remain ignored")
+	}
+}
+
+func TestOpenNegatedSameFile(t *testing.T) {
+	dir := t.TempDir()
+	cache.NewIgnoreCache(16)
+	os.WriteFile(filepath.Join(dir, ".heheignore"), []byte("*\n!keep.txt\n"), 0644)
+	os.WriteFile(filepath.Join(dir, "keep.txt"), []byte("keep"), 0644)
+	os.WriteFile(filepath.Join(dir, "other.txt"), []byte("nope"), 0644)
+
+	hfs := Dir(dir)
+
+	keep, err := hfs.Open("keep.txt")
+	if err != nil {
+		t.Fatalf("expected keep.txt to be re-included by negation, got %v", err)
+	}
+	keep.Close()
+
+	if _, err := hfs.Open("other.txt"); err == nil {
+		t.Fatal("expected other.txt to remain ignored")
+	}
+}
+
 func TestReaddirIgnoreFile(t *testing.T) {
 	dir := t.TempDir()
 	cache.NewIgnoreCache(16)

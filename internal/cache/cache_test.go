@@ -2,9 +2,8 @@ package cache
 
 import (
 	"image"
+	"slices"
 	"testing"
-
-	ignore "github.com/wsand02/go-gitignore"
 )
 
 func TestSizeToNCMB(t *testing.T) {
@@ -21,16 +20,16 @@ func TestIgnoreCacheRoundtrip(t *testing.T) {
 	if err := NewIgnoreCache(1); err != nil {
 		t.Fatal(err)
 	}
-	gi := ignore.CompileIgnoreLines("*.tmp")
+	lines := []string{"*.tmp", "!keep.tmp"}
 	c := GetIgnoreCache()
-	c.Set("key", gi, 1)
+	c.Set("key", lines, 1)
 	c.Wait() // ristretto applies Set asynchronously
 
 	got, ok := c.Get("key")
 	if !ok {
 		t.Fatal("expected cached ignore value, got miss")
 	}
-	if got != gi {
+	if !slices.Equal(got, lines) {
 		t.Error("cached ignore value differs from stored value")
 	}
 }
