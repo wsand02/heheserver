@@ -3,7 +3,6 @@ package vidthumb
 import (
 	"bytes"
 	"image"
-	"log"
 	"os/exec"
 )
 
@@ -21,7 +20,7 @@ func GenerateThumb(path string) (image.Image, error) {
 	}
 	img, _, err := image.Decode(&out)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	return img, nil
 }

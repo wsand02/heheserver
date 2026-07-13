@@ -52,7 +52,7 @@
       </div>
       {{ else if .IsVideo }}
       <div class="card-image media-frame">
-        <video controls preload="metadata" class="media-contain" poster="">
+        <video controls loop playsinline preload="metadata" class="media-contain" poster="">
           <source src="{{ .GetPath }}" />
           Your browser does not support the video tag.
         </video>
