@@ -4,6 +4,7 @@ import (
 	"embed"
 	"html/template"
 	"io/fs"
+	"log"
 	"net/http"
 
 	"github.com/wsand02/heheserver/internal/version"
@@ -57,6 +58,26 @@ var templates = template.Must(template.New("").Funcs(template.FuncMap{"sub": sub
 func RenderTemplate(w http.ResponseWriter, tmpl string, ctx any) {
 	err := templates.ExecuteTemplate(w, tmpl+".html", ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		// Rendering may have already written a partial body (and a 200 header),
+		// so we can't reliably swap in a styled error page here — just log it.
+		log.Printf("render template %q: %v", tmpl, err)
+		http.Error(w, "template error", http.StatusInternalServerError)
+	}
+}
+
+type errorContext struct {
+	Code    int
+	Status  string
+	Message string
+}
+
+// RenderError writes a glacialwisp-themed error page with the given status code
+// and detail message.
+func RenderError(w http.ResponseWriter, code int, msg string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(code)
+	ctx := errorContext{Code: code, Status: http.StatusText(code), Message: msg}
+	if err := templates.ExecuteTemplate(w, "error.html", ctx); err != nil {
+		log.Printf("render error page (%d): %v", code, err)
 	}
 }

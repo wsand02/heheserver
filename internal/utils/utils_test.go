@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -18,13 +19,14 @@ func TestGetCost(t *testing.T) {
 
 func TestHttpLogErr(t *testing.T) {
 	w := httptest.NewRecorder()
-	HttpLogErr(w, errors.New("boom"), "something failed", http.StatusBadRequest)
+	r := httptest.NewRequest(http.MethodGet, "/post/?path=/x.txt", nil)
+	HttpLogErr(w, r, errors.New("boom"), "something failed", http.StatusBadRequest)
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
-	if body := w.Body.String(); body != "something failed\n" {
-		t.Errorf("body = %q, want %q", body, "something failed\n")
+	if body := w.Body.String(); !strings.Contains(body, "something failed") {
+		t.Errorf("body missing message %q: %s", "something failed", body)
 	}
 }
 

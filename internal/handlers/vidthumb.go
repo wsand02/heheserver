@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"image/jpeg"
-	"log"
 	"net/http"
 	"path"
 	"path/filepath"
@@ -19,7 +18,7 @@ import (
 func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
 	hf, err := hfs.Open(ctx)
 	if err != nil {
-		utils.HttpLogErr(w, err, "Error opening file", http.StatusInternalServerError)
+		utils.HttpLogErr(w, r, err, "open file", utils.StatusForErr(err))
 		return
 	}
 	defer hf.Close()
@@ -29,7 +28,7 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 	if ok {
 		err = jpeg.Encode(w, vtb, nil)
 		if err != nil {
-			utils.HttpLogErr(w, err, "Error encoding cached thumbnail", http.StatusInternalServerError)
+			utils.HttpLogErr(w, r, err, "encode cached thumbnail", http.StatusInternalServerError)
 			return
 		}
 		return
@@ -37,14 +36,9 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 	head := make([]byte, 512)
 	hf.Read(head)
 	if !filetype.IsVideo(head) {
-		utils.HttpLogErr(w, fmt.Errorf("Not a video"), "Not a video", http.StatusUnsupportedMediaType)
+		utils.HttpLogErr(w, r, fmt.Errorf("not a video"), "not a video", http.StatusUnsupportedMediaType)
 		return
 	}
-
-	hfstat, _ := hf.Stat()
-	log.Println(hfstat.Name())
-	// a := path.Clean(path.Clean("/" + ctx)[1:])
-	// a, _ = filepath.Localize(a)
 
 	// taken from fs.Open()
 	path := path.Clean("/" + ctx)[1:]
@@ -53,7 +47,7 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 	}
 	path, err = filepath.Localize(path)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HttpLogErr(w, r, err, "localize path", http.StatusInternalServerError)
 		return
 	}
 	dir := string(hfs.Root)
@@ -63,13 +57,13 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 	fullName := filepath.Join(dir, path)
 	img, err := vidthumb.GenerateThumb(fullName)
 	if err != nil {
-		utils.HttpLogErr(w, err, "Error generating thumbnail", http.StatusInternalServerError)
+		utils.HttpLogErr(w, r, err, "generate thumbnail", http.StatusInternalServerError)
 		return
 	}
 	cache.GetVidThumbCache().Set(ctx, img, utils.GetCost(img))
 	err = jpeg.Encode(w, img, nil)
 	if err != nil {
-		utils.HttpLogErr(w, err, "Error encoding thumbnail", http.StatusInternalServerError)
+		utils.HttpLogErr(w, r, err, "encode thumbnail", http.StatusInternalServerError)
 		return
 	}
 }

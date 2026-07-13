@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -42,6 +43,24 @@ func TestArithmeticHelpers(t *testing.T) {
 	}
 	if !le(3, 3) || !le(3, 5) || le(5, 3) {
 		t.Error("le behaves incorrectly")
+	}
+}
+
+func TestRenderError(t *testing.T) {
+	rec := httptest.NewRecorder()
+	RenderError(rec, http.StatusNotFound, "open file")
+
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+	if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+		t.Errorf("Content-Type = %q, want text/html", ct)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{"404", http.StatusText(http.StatusNotFound), "open file", "Back to gallery"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("body missing %q\n%s", want, body)
+		}
 	}
 }
 

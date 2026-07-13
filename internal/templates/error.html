@@ -1,0 +1,10 @@
+{{ template "header" . }}
+<div class="columns">
+  <div class="column col-6 col-md-12 col-mx-auto text-center" style="padding: 3rem 0">
+    <h1 class="text-primary" style="font-size: 5rem; margin: 0">{{ .Code }}</h1>
+    <p class="h4">{{ .Status }}</p>
+    {{ if .Message }}<p class="text-gray">{{ .Message }}</p>{{ end }}
+    <a href="/" class="btn btn-primary mt-2">Back to gallery</a>
+  </div>
+</div>
+{{ template "footer" . }}
