@@ -36,7 +36,7 @@ func (hfs HeheFS) Open(name string) (http.File, error) {
 	if len(name) > 0 && name[0] == '/' {
 		normPath = name[1:]
 	}
-	if ignore.MatchesAny(rules, normPath) {
+	if ignore.Matches(rules, normPath) {
 		return nil, fs.ErrNotExist
 	}
 
@@ -65,6 +65,9 @@ func (h HeheFile) Readdir(count int) ([]os.FileInfo, error) {
 	if !ok {
 		return nil, errMissingReadDir
 	}
+	// Rules depend only on the directory being listed, so compute them once
+	// rather than per entry.
+	rules := ignore.GetIgnoreForPath(h.root, filepath.Join(h.root, h.currentPath))
 	var list []fs.FileInfo
 	for {
 		dirs, err := d.ReadDir(count - len(list))
@@ -74,13 +77,12 @@ func (h HeheFile) Readdir(count int) ([]os.FileInfo, error) {
 				// Pretend it doesn't exist, like (*os.File).Readdir does.
 				continue
 			}
-			rules := ignore.GetIgnoreForPath(h.root, filepath.Join(h.root, h.currentPath))
 			// Normalize path by removing leading slash for pattern matching
 			pathToCheck := filepath.Join(h.currentPath, info.Name())
 			if len(pathToCheck) > 0 && pathToCheck[0] == '/' {
 				pathToCheck = pathToCheck[1:]
 			}
-			if ignore.MatchesAny(rules, pathToCheck) {
+			if ignore.Matches(rules, pathToCheck) {
 				continue
 			}
 			list = append(list, info)

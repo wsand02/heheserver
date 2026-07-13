@@ -1,36 +1,40 @@
 package ignore
 
 import (
+	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	ignore "github.com/wsand02/go-gitignore"
 	"github.com/wsand02/heheserver/internal/cache"
 )
 
-// getIgnoreForPath returns a slice of ignore rules for the specified path,
-// recursively traverses from root to the path appending all rules along the way.
-func GetIgnoreForPath(root, path string) []*ignore.GitIgnore {
+// GetIgnoreForPath returns the combined ignore rules for the specified path.
+// It walks from the target directory up to root, collecting each level's
+// .heheignore lines, then compiles them into a single GitIgnore ordered
+// root-first so that negation (!pattern) is honored across files, matching
+// gitignore's last-match-wins semantics.
+func GetIgnoreForPath(root, path string) *ignore.GitIgnore {
 	root = filepath.Clean(root)
 	dir := filepath.Clean(path)
 
-	var rules []*ignore.GitIgnore
+	var perDir [][]string
 
 	for {
-
-		ig, ok := cache.GetIgnoreCache().Get(dir)
-
+		lines, ok := cache.GetIgnoreCache().Get(dir)
 		if !ok {
-			var err error
-			ig, err = ignore.CompileIgnoreFile(filepath.Join(dir, ".heheignore"))
+			bs, err := os.ReadFile(filepath.Join(dir, ".heheignore"))
 			if err != nil {
-				ig = nil
+				lines = nil
+			} else {
+				lines = strings.Split(string(bs), "\n")
 			}
-			cache.GetIgnoreCache().Set(dir, ig, 1)
+			cache.GetIgnoreCache().Set(dir, lines, 1)
 		}
 
-		if ig != nil {
-			rules = append(rules, ig)
+		if lines != nil {
+			perDir = append(perDir, lines)
 		}
 
 		if dir == root || dir == "." || dir == "/" {
@@ -40,15 +44,22 @@ func GetIgnoreForPath(root, path string) []*ignore.GitIgnore {
 		dir = filepath.Dir(dir)
 	}
 
-	slices.Reverse(rules)
-	return rules
+	// perDir is deepest-first; reverse so the root file's lines come first.
+	slices.Reverse(perDir)
+
+	var all []string
+	for _, lines := range perDir {
+		all = append(all, lines...)
+	}
+
+	return ignore.CompileIgnoreLines(all...)
 }
 
-func MatchesAny(rules []*ignore.GitIgnore, path string) bool {
-	for _, r := range rules {
-		if r.MatchesPath(path) {
-			return true
-		}
+// Matches reports whether path is ignored by the combined rules. A nil ruleset
+// (no .heheignore anywhere up the tree) matches nothing.
+func Matches(rules *ignore.GitIgnore, path string) bool {
+	if rules == nil {
+		return false
 	}
-	return false
+	return rules.MatchesPath(path)
 }
