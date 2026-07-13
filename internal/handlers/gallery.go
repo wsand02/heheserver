@@ -162,13 +162,13 @@ func (gc *GalleryContext) BreadcrumbToUrl(i int) string {
 func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
 	hf, err := hfs.Open(ctx)
 	if err != nil {
-		utils.HttpLogErr(w, err, "Error opening file", http.StatusInternalServerError)
+		utils.HttpLogErr(w, r, err, "open file", utils.StatusForErr(err))
 		return
 	}
 	defer hf.Close()
 	dirlis, err := hf.Readdir(-1)
 	if err != nil {
-		utils.HttpLogErr(w, err, "Error reading dir", http.StatusInternalServerError)
+		utils.HttpLogErr(w, r, err, "read directory", http.StatusInternalServerError)
 		return
 	}
 
@@ -197,7 +197,7 @@ func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.
 	}
 	pid, err := strconv.Atoi(q)
 	if err != nil {
-		utils.HttpLogErr(w, err, "Query conversion failed", http.StatusBadRequest)
+		utils.HttpLogErr(w, r, err, "invalid page number", http.StatusBadRequest)
 		return
 	}
 	pid -= 1
@@ -223,7 +223,7 @@ func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.
 			templates.RenderTemplate(w, "list", &gc)
 			return
 		}
-		utils.HttpLogErr(w, fmt.Errorf("p: %d out of range", pid), "p out of range", http.StatusBadRequest)
+		utils.HttpLogErr(w, r, fmt.Errorf("p: %d out of range", pid), "page out of range", http.StatusBadRequest)
 		return
 	}
 
@@ -253,17 +253,17 @@ func (pc *PostContext) GalleryURL() string {
 func PostHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
 	hf, err := hfs.Open(ctx)
 	if err != nil {
-		utils.HttpLogErr(w, err, "Error opening file", http.StatusInternalServerError)
+		utils.HttpLogErr(w, r, err, "open file", utils.StatusForErr(err))
 		return
 	}
 	defer hf.Close()
 	hfstat, err := hf.Stat()
 	if err != nil {
-		utils.HttpLogErr(w, err, "Failed to fetch file info", http.StatusInternalServerError)
+		utils.HttpLogErr(w, r, err, "stat file", utils.StatusForErr(err))
 		return
 	}
 	if hfstat.IsDir() {
-		utils.HttpLogErr(w, fmt.Errorf("Directory on posthandler"), "This is a directory", http.StatusBadRequest)
+		utils.HttpLogErr(w, r, fmt.Errorf("directory on posthandler"), "this is a directory", http.StatusBadRequest)
 		return
 	}
 	templates.RenderTemplate(w, "post", &PostContext{models.GalleryItem{Filename: hfstat.Name(), IsDir: hfstat.IsDir(), Path: ctx, Size: hfstat.Size(), ModTime: hfstat.ModTime()}}) // oh well
