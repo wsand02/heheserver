@@ -33,6 +33,11 @@ func (s *Server) initCache() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if s.config.Gallery {
+		if err = cache.NewDimensionCache(); err != nil {
+			log.Fatal(err)
+		}
+	}
 	if s.config.Resize {
 		err = cache.NewResizeCache(s.config.ResizeCacheSize)
 		if err != nil {

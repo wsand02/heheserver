@@ -158,6 +158,28 @@ func TestListVideoAttributes(t *testing.T) {
 	}
 }
 
+// TestListImageDimensions guards that known image dimensions render as
+// width/height attributes so the browser reserves each tile's aspect ratio
+// before the thumbnail loads (no masonry reflow while thumbnails generate,
+// issue #38). Unknown dimensions (zero) emit no attributes.
+func TestListImageDimensions(t *testing.T) {
+	withDims := renderList(t, &GalleryContext{
+		CurrentPage: 1, MaxPage: 1,
+		Items: []models.GalleryItem{{Filename: "pic.png", Path: "/", Width: 1200, Height: 800}},
+	})
+	if !strings.Contains(withDims, `width="1200"`) || !strings.Contains(withDims, `height="800"`) {
+		t.Errorf("expected width/height attrs for known dimensions, got:\n%s", withDims)
+	}
+
+	noDims := renderList(t, &GalleryContext{
+		CurrentPage: 1, MaxPage: 1,
+		Items: []models.GalleryItem{{Filename: "pic.png", Path: "/"}},
+	})
+	if strings.Contains(noDims, `height="`) {
+		t.Errorf("expected no width/height attrs when dimensions unknown, got:\n%s", noDims)
+	}
+}
+
 // TestListInfiniteScrollFlag guards that the -no-infinite-scroll flag surfaces
 // on the grid as data-infinite, which the gallery JS reads to skip Infinite
 // Scroll and keep paginated navigation.

@@ -2,11 +2,19 @@ package handlers
 
 import (
 	"fmt"
+	"image"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
+	_ "image/gif"  // register GIF decoder for DecodeConfig
+	_ "image/jpeg" // register JPEG decoder for DecodeConfig
+	_ "image/png"  // register PNG decoder for DecodeConfig
+
+	_ "golang.org/x/image/webp" // register WebP decoder for DecodeConfig
+
+	"github.com/wsand02/heheserver/internal/cache"
 	"github.com/wsand02/heheserver/internal/config"
 	"github.com/wsand02/heheserver/internal/fs"
 	"github.com/wsand02/heheserver/internal/models"
@@ -160,6 +168,38 @@ func (gc *GalleryContext) BreadcrumbToUrl(i int) string {
 	return urla
 }
 
+// probeImageDimensions fills Width/Height on the page's image items so the
+// template can reserve each tile's aspect ratio up front, eliminating masonry
+// reflow while resized thumbnails are still generating. It reads only the image
+// header (image.DecodeConfig) and caches the result by path. Failures (unknown
+// formats like svg, unreadable files) leave the dimensions zero and are simply
+// skipped — the tile falls back to sizing itself once the image loads.
+func probeImageDimensions(hfs *fs.HeheFS, items []models.GalleryItem) {
+	dc := cache.GetDimensionCache()
+	for i := range items {
+		it := &items[i]
+		if it.IsDir || !it.IsImage() {
+			continue
+		}
+		full := it.Path + it.Filename
+		if pt, ok := dc.Get(full); ok {
+			it.Width, it.Height = pt.X, pt.Y
+			continue
+		}
+		f, err := hfs.Open(full)
+		if err != nil {
+			continue
+		}
+		cfg, _, err := image.DecodeConfig(f)
+		f.Close()
+		if err != nil || cfg.Width == 0 || cfg.Height == 0 {
+			continue
+		}
+		it.Width, it.Height = cfg.Width, cfg.Height
+		dc.Set(full, image.Pt(cfg.Width, cfg.Height), 1)
+	}
+}
+
 func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
 	hf, err := hfs.Open(ctx)
 	if err != nil {
@@ -230,6 +270,7 @@ func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.
 	}
 
 	gc.Items = divided[pid]
+	probeImageDimensions(hfs, gc.Items)
 	templates.RenderTemplate(w, "list", &gc)
 }
 

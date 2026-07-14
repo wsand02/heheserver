@@ -44,6 +44,37 @@ func GetResizeCache() *ResizeCache {
 	return resizeCache
 }
 
+// DimensionCache holds decoded image dimensions (image.Point{X: width,
+// Y: height}) keyed by file path, so the gallery can emit width/height on grid
+// <img>s without re-decoding every header on each listing/refilter render.
+type DimensionCache struct {
+	*ristretto.Cache[string, image.Point]
+}
+
+var dimensionCache *DimensionCache
+
+func GetDimensionCache() *DimensionCache {
+	if dimensionCache == nil {
+		log.Fatal("dimension cache not initialized")
+	}
+	return dimensionCache
+}
+
+// NewDimensionCache uses a fixed, tiny footprint (each entry is one point, set
+// with cost 1) rather than a configurable byte budget like the media caches.
+func NewDimensionCache() error {
+	cache, err := ristretto.NewCache(&ristretto.Config[string, image.Point]{
+		NumCounters: 1_000_000, // ~100k tracked items
+		MaxCost:     100_000,   // cost 1 per entry => up to ~100k cached dimensions
+		BufferItems: 64,
+	})
+	if err != nil {
+		return err
+	}
+	dimensionCache = &DimensionCache{cache}
+	return nil
+}
+
 func NewIgnoreCache(size int64) error {
 	size, nc := sizeToNCMB(size)
 	cache, err := ristretto.NewCache(&ristretto.Config[string, []string]{

@@ -61,6 +61,10 @@
           {{ else }}
           src="{{ .GetUrl }}"
           {{ end }}
+          {{ if and .Width .Height }}
+          width="{{ .Width }}"
+          height="{{ .Height }}"
+          {{ end }}
           alt="{{ .Filename }}"
         />
       </div>
