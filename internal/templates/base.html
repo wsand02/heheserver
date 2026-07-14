@@ -58,13 +58,28 @@
         object-fit: contain;
         background: #000;
       }
-      /* Lazy-video tile: a poster (sized naturally by imagesLoaded, like an
-         image) or a plain 16:9 box, with a centered play badge. The click
-         handler in the gallery JS replaces it with a real <video>. */
+      /* Lazy-video tile: a 16:9 box with a centered play badge; the click
+         handler in the gallery JS replaces it with a real <video>. The box is
+         reserved up front (like the old eager <video class="media-cover">) so
+         the grid keeps its height while poster thumbnails are still generating
+         — otherwise the tiles collapse and the footer jumps up the page. */
       .video-placeholder {
         position: relative;
         display: block;
         cursor: pointer;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: #000;
+        overflow: hidden;
+      }
+      /* Fill the reserved box; absolute + inset:0 makes the poster stretch to
+         the box regardless of the generic .card-image img height:auto rule. */
+      .video-placeholder .poster {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
       }
       .play-badge {
         position: absolute;

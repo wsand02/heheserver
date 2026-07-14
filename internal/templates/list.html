@@ -70,7 +70,7 @@
            infinite-scroll sessions don't accumulate hundreds of media
            elements. With JS off this is just a link to the /post/ view. -->
       <a
-        class="card-image video-placeholder{{ if not (and $.Resize $.FFmpegExists) }} media-cover{{ end }}"
+        class="card-image video-placeholder"
         href="{{ .GetPostLink }}"
         data-video="{{ .GetUrl }}"
         {{ if and $.Resize $.FFmpegExists }}
