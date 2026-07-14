@@ -9,12 +9,15 @@ import (
 
 func TestNewConfigValid(t *testing.T) {
 	dir := t.TempDir()
-	cfg, err := NewConfig(3400, 64, true, false, dir, "0.0.0.0", 16, 1000, 1000)
+	cfg, err := NewConfig(3400, 64, true, false, false, dir, "0.0.0.0", 16, 1000, 1000)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if cfg.Port != 3400 || cfg.Split != 64 || !cfg.Gallery || cfg.Resize {
 		t.Errorf("config fields not populated as expected: %+v", cfg)
+	}
+	if cfg.NoInfiniteScroll {
+		t.Errorf("NoInfiniteScroll should default to false when not set: %+v", cfg)
 	}
 	if cfg.Directory != dir || cfg.Host != "0.0.0.0" {
 		t.Errorf("directory/host not populated: %+v", cfg)
@@ -27,7 +30,7 @@ func TestNewConfigValid(t *testing.T) {
 func TestNewConfigInvalidSplit(t *testing.T) {
 	dir := t.TempDir()
 	for _, split := range []int{0, -1} {
-		if _, err := NewConfig(3400, split, false, false, dir, "0.0.0.0", 16, 1000, 1000); err == nil {
+		if _, err := NewConfig(3400, split, false, false, false, dir, "0.0.0.0", 16, 1000, 1000); err == nil {
 			t.Errorf("split %d: expected error, got nil", split)
 		}
 	}
@@ -35,8 +38,19 @@ func TestNewConfigInvalidSplit(t *testing.T) {
 
 func TestNewConfigMissingDirectory(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "does-not-exist")
-	if _, err := NewConfig(3400, 64, false, false, missing, "0.0.0.0", 16, 1000, 1000); err == nil {
+	if _, err := NewConfig(3400, 64, false, false, false, missing, "0.0.0.0", 16, 1000, 1000); err == nil {
 		t.Error("expected error for missing directory, got nil")
+	}
+}
+
+func TestNewConfigNoInfiniteScroll(t *testing.T) {
+	dir := t.TempDir()
+	cfg, err := NewConfig(3400, 64, true, false, true, dir, "0.0.0.0", 16, 1000, 1000)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !cfg.NoInfiniteScroll {
+		t.Errorf("NoInfiniteScroll not threaded into Config: %+v", cfg)
 	}
 }
 

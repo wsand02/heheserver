@@ -130,10 +130,12 @@ func TestListSpecialCharURLsNotBroken(t *testing.T) {
 	}
 }
 
-// TestListVideoAttributes guards the grid <video> playback attributes: videos
-// must play inline (playsinline), loop, and preload metadata so a single tap
-// plays and real dimensions are available for aspect-ratio sizing. The invalid
-// loading="lazy" (a no-op on <video>) must be gone.
+// TestListVideoAttributes guards that grid video tiles are lazy click-to-play
+// placeholders rather than eager <video> elements (issue #38: long
+// infinite-scroll sessions must not accumulate hundreds of live media
+// elements). The tile is an anchor carrying the raw video URL in data-video,
+// linking to the /post/ view as the no-JS fallback, and emits no eager
+// <source> that would load media on page load.
 func TestListVideoAttributes(t *testing.T) {
 	gc := &GalleryContext{
 		Items:       []models.GalleryItem{{Filename: "clip.mp4", Path: "/"}},
@@ -142,13 +144,53 @@ func TestListVideoAttributes(t *testing.T) {
 	}
 	body := renderList(t, gc)
 
-	for _, attr := range []string{"playsinline", "loop", `preload="metadata"`} {
-		if !strings.Contains(body, attr) {
-			t.Errorf("grid video missing %q, got:\n%s", attr, body)
-		}
+	if !strings.Contains(body, "video-placeholder") {
+		t.Errorf("grid video tile is not a lazy placeholder, got:\n%s", body)
 	}
-	if strings.Contains(body, `loading="lazy"`) {
-		t.Errorf("grid video still has invalid loading=\"lazy\", got:\n%s", body)
+	if !strings.Contains(body, `data-video="/fs/clip.mp4"`) {
+		t.Errorf("placeholder missing raw video URL in data-video, got:\n%s", body)
+	}
+	if !strings.Contains(body, `href="/post/?path=/clip.mp4"`) {
+		t.Errorf("placeholder missing no-JS post link, got:\n%s", body)
+	}
+	if strings.Contains(body, "<source") {
+		t.Errorf("grid still emits an eager <source> (media loads on page load), got:\n%s", body)
+	}
+}
+
+// TestListImageDimensions guards that known image dimensions render as
+// width/height attributes so the browser reserves each tile's aspect ratio
+// before the thumbnail loads (no masonry reflow while thumbnails generate,
+// issue #38). Unknown dimensions (zero) emit no attributes.
+func TestListImageDimensions(t *testing.T) {
+	withDims := renderList(t, &GalleryContext{
+		CurrentPage: 1, MaxPage: 1,
+		Items: []models.GalleryItem{{Filename: "pic.png", Path: "/", Width: 1200, Height: 800}},
+	})
+	if !strings.Contains(withDims, `width="1200"`) || !strings.Contains(withDims, `height="800"`) {
+		t.Errorf("expected width/height attrs for known dimensions, got:\n%s", withDims)
+	}
+
+	noDims := renderList(t, &GalleryContext{
+		CurrentPage: 1, MaxPage: 1,
+		Items: []models.GalleryItem{{Filename: "pic.png", Path: "/"}},
+	})
+	if strings.Contains(noDims, `height="`) {
+		t.Errorf("expected no width/height attrs when dimensions unknown, got:\n%s", noDims)
+	}
+}
+
+// TestListInfiniteScrollFlag guards that the -no-infinite-scroll flag surfaces
+// on the grid as data-infinite, which the gallery JS reads to skip Infinite
+// Scroll and keep paginated navigation.
+func TestListInfiniteScrollFlag(t *testing.T) {
+	on := renderList(t, &GalleryContext{InfiniteScroll: true, CurrentPage: 1, MaxPage: 1})
+	if !strings.Contains(on, `data-infinite="true"`) {
+		t.Errorf("expected data-infinite=\"true\" when InfiniteScroll on, got:\n%s", on)
+	}
+	off := renderList(t, &GalleryContext{InfiniteScroll: false, CurrentPage: 1, MaxPage: 1})
+	if !strings.Contains(off, `data-infinite="false"`) {
+		t.Errorf("expected data-infinite=\"false\" when InfiniteScroll off, got:\n%s", off)
 	}
 }
 

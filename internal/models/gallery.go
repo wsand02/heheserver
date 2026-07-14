@@ -13,6 +13,12 @@ type GalleryItem struct {
 	Path     string
 	Size     int64
 	ModTime  time.Time
+	// Width/Height are the source image's pixel dimensions, filled in for image
+	// items so the grid can reserve the right aspect ratio before the thumbnail
+	// loads (avoiding masonry reflow). Zero when unknown (non-image, or an
+	// undecodable format like svg).
+	Width  int
+	Height int
 }
 
 // SizeMB returns the size as Megabytes NOT MEBIBYTESDSDKFJK MAYBE MY:......
