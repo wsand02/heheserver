@@ -19,7 +19,8 @@ authentication or other security features required for safe exposure to the publ
 - `.heheignore` file omission — matching files are hidden from every directory index *and* made un-openable, as if they don't exist
 - Optional embedded gallery for images, video, and audio, with thumbnails and a single-item post view
 - Filter the gallery by file type, filename, or extension — updates in realtime, with a no-JavaScript fallback
-- Pagination for large directories
+- Click-to-play videos in the gallery — a poster and play button by default, with the video loaded only when clicked, so long browsing sessions stay light
+- Infinite scroll for large directories, with pagination as the no-JavaScript fallback (and an option to force pagination even with JavaScript)
 - Optional on-the-fly image resizing (pure-Go fallback, accelerated by ffmpeg when present)
 - Video thumbnails when ffmpeg is available
 
@@ -67,6 +68,8 @@ heheserver [options] [path]
 
 `-s` or `-split` Max items per page for gallery pagination. (default 48)
 
+`-no-infinite-scroll` Disable infinite scroll in the gallery; always use paginated navigation even with JavaScript enabled. (default omitted => false)
+
 `-igncache` Size of ignore cache in megabytes, approximate. (default 16)
 
 `-rescache` Size of resize cache in megabytes, approximate. (default 1000)
@@ -105,6 +108,18 @@ Add `-r` to enable on-the-fly image resizing (used for thumbnails). If ffmpeg is
 `PATH`, video thumbnails are generated too; otherwise image resizing falls back to a pure-Go
 implementation and video thumbnails are skipped. The current version is shown in the footer,
 linking back to this repository.
+
+### Browsing large directories
+
+With JavaScript, the gallery loads more items automatically as you scroll (infinite scroll).
+Video tiles show a poster and a play button by default; the actual video is only created when
+you click one, so scrolling past many videos in a long session doesn't keep growing browser
+memory. With JavaScript disabled, the gallery falls back to numbered pagination and each video
+tile is a plain link to its post view.
+
+If you'd rather always use pagination — for instance to keep memory bounded on very large
+directories — pass `-no-infinite-scroll`. The server pagination controls then stay visible even
+with JavaScript enabled, while click-to-play videos still work.
 
 ### Filtering
 

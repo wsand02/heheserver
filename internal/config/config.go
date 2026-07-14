@@ -20,6 +20,8 @@ const (
 	defaultSplit             int    = 48
 	splitDesc                string = "Max items per page for gallery pagination."
 	defaultResizeFlag        bool   = false
+	noInfiniteScrollDesc     string = "Disable infinite scroll in the gallery; always use paginated navigation even with JavaScript enabled."
+	defaultNoInfiniteScroll  bool   = false
 	defaultIgnoreCacheSize   int64  = 16
 	ignoreCacheSizeDesc      string = "Size of ignore cache in megabytes."
 	defaultResizeCacheSize   int64  = 1000
@@ -33,6 +35,7 @@ type Config struct {
 	Host              string
 	Gallery           bool
 	Resize            bool
+	NoInfiniteScroll  bool
 	Directory         string
 	Split             int
 	FFmpegExists      bool
@@ -41,7 +44,7 @@ type Config struct {
 	ResizeCacheSize   int64
 }
 
-func NewConfig(port, split int, gallery, resize bool, directory, host string, igncsize, rszcsize, vidthmbcsize int64) (*Config, error) {
+func NewConfig(port, split int, gallery, resize, noInfiniteScroll bool, directory, host string, igncsize, rszcsize, vidthmbcsize int64) (*Config, error) {
 	if split < 1 {
 		return nil, fmt.Errorf("Split has to be greater than 0")
 	}
@@ -57,6 +60,7 @@ func NewConfig(port, split int, gallery, resize bool, directory, host string, ig
 		Directory:         directory,
 		Gallery:           gallery,
 		Resize:            resize,
+		NoInfiniteScroll:  noInfiniteScroll,
 		Split:             split,
 		FFmpegExists:      utils.FFmpegExists(),
 		IgnoreCacheSize:   igncsize,
@@ -92,6 +96,7 @@ func ParseFromFlags() (*Config, error) {
 	host := flag.String("host", defaultHost, hostDesc)
 	gallery := flag.Bool("gallery", defaultGalleryFlag, galleryDesc)
 	resize := flag.Bool("resize", defaultResizeFlag, resizeDesc)
+	noInfiniteScroll := flag.Bool("no-infinite-scroll", defaultNoInfiniteScroll, noInfiniteScrollDesc)
 	split := flag.Int("split", defaultSplit, splitDesc)
 	ignoreCacheSize := flag.Int64("igncache", defaultIgnoreCacheSize, ignoreCacheSizeDesc)
 	resizeCacheSize := flag.Int64("rescache", defaultResizeCacheSize, resizeCacheSizeDesc)
@@ -108,5 +113,5 @@ func ParseFromFlags() (*Config, error) {
 	if len(dirToServe) == 0 {
 		dirToServe = defaultDir
 	}
-	return NewConfig(*port, *split, *gallery, *resize, dirToServe, *host, *ignoreCacheSize, *resizeCacheSize, *vidThumbCacheSize)
+	return NewConfig(*port, *split, *gallery, *resize, *noInfiniteScroll, dirToServe, *host, *ignoreCacheSize, *resizeCacheSize, *vidThumbCacheSize)
 }

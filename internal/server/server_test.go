@@ -29,7 +29,7 @@ func setupTestDir(t *testing.T) string {
 }
 
 func testServer(t *testing.T, dir string, gallery, resize bool) *httptest.Server {
-	cfg, err := config.NewConfig(0, 64, gallery, resize, dir, "localhost", 1, 1000, 1000)
+	cfg, err := config.NewConfig(0, 64, gallery, resize, false, dir, "localhost", 1, 1000, 1000)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

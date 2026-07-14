@@ -15,15 +15,16 @@ import (
 )
 
 type GalleryContext struct {
-	Items        []models.GalleryItem
-	Resize       bool
-	FFmpegExists bool
-	Path         string
-	CurrentPage  int
-	MaxPage      int
-	Filter       models.GalleryFilter
-	FilterQuery  string // raw ?q= echo, to refill the search input
-	FilterExt    string // raw ?ext= echo, to refill the extension input
+	Items          []models.GalleryItem
+	Resize         bool
+	FFmpegExists   bool
+	InfiniteScroll bool // when false, the gallery uses paginated navigation only
+	Path           string
+	CurrentPage    int
+	MaxPage        int
+	Filter         models.GalleryFilter
+	FilterQuery    string // raw ?q= echo, to refill the search input
+	FilterExt      string // raw ?ext= echo, to refill the extension input
 }
 
 // typeOrder is the stable rendering/serialization order for file-type
@@ -149,7 +150,7 @@ func (gc *GalleryContext) GetBreadcrumbs() []string {
 }
 
 func (gc *GalleryContext) BreadcrumbToUrl(i int) string {
-	crumbs := gc.GetBreadcrumbs()[: i+1]
+	crumbs := gc.GetBreadcrumbs()[:i+1]
 	pcrumbs := []string{"?path="}
 	for _, c := range crumbs {
 		pcrumbs = append(pcrumbs, url.QueryEscape(c))
@@ -203,14 +204,15 @@ func GalleryHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.
 	pid -= 1
 
 	gc := GalleryContext{
-		Resize:       config.Resize,
-		FFmpegExists: config.FFmpegExists,
-		Path:         ctx,
-		CurrentPage:  pid + 1,
-		MaxPage:      len(divided),
-		Filter:       filter,
-		FilterQuery:  strings.TrimSpace(r.URL.Query().Get("q")),
-		FilterExt:    strings.TrimSpace(r.URL.Query().Get("ext")),
+		Resize:         config.Resize,
+		FFmpegExists:   config.FFmpegExists,
+		InfiniteScroll: !config.NoInfiniteScroll,
+		Path:           ctx,
+		CurrentPage:    pid + 1,
+		MaxPage:        len(divided),
+		Filter:         filter,
+		FilterQuery:    strings.TrimSpace(r.URL.Query().Get("q")),
+		FilterExt:      strings.TrimSpace(r.URL.Query().Get("ext")),
 	}
 
 	if pid < 0 || pid >= len(divided) {

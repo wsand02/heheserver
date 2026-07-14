@@ -58,6 +58,32 @@
         object-fit: contain;
         background: #000;
       }
+      /* Lazy-video tile: a poster (sized naturally by imagesLoaded, like an
+         image) or a plain 16:9 box, with a centered play badge. The click
+         handler in the gallery JS replaces it with a real <video>. */
+      .video-placeholder {
+        position: relative;
+        display: block;
+        cursor: pointer;
+      }
+      .play-badge {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 3.2rem;
+        height: 3.2rem;
+        padding-left: 0.15rem; /* optically center the ▶ glyph */
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.55);
+        color: #fff;
+        font-size: 1.3rem;
+        line-height: 1;
+        pointer-events: none;
+      }
       /* Masonry fluid-percentage grid. Items float as a rough grid without JS;
          Masonry absolutely-positions them once it initializes. */
       .grid-sizer,
@@ -232,7 +258,35 @@
             },
             true
           );
-          if (container.querySelector(".pagination__next")) {
+          // Click-to-play: video tiles render as a poster + play badge and stay
+          // out of the browser's media budget until clicked. One delegated
+          // listener also covers infinite-scroll-appended tiles.
+          grid.addEventListener("click", function (e) {
+            var ph = e.target.closest && e.target.closest(".video-placeholder");
+            if (!ph) return;
+            e.preventDefault();
+            var video = document.createElement("video");
+            video.className = "media-cover";
+            video.controls = true;
+            video.loop = true;
+            video.autoplay = true;
+            video.playsInline = true;
+            video.preload = "metadata";
+            var poster = ph.getAttribute("data-poster");
+            if (poster) video.poster = poster;
+            var source = document.createElement("source");
+            source.src = ph.getAttribute("data-video");
+            video.appendChild(source);
+            ph.parentNode.replaceChild(video, ph);
+            // Real aspect ratio arrives via the loadedmetadata handler above.
+            if (msnry) msnry.layout();
+          });
+          // data-infinite="false" (the -no-infinite-scroll flag) keeps the
+          // server pagination and skips Infinite Scroll entirely.
+          if (
+            grid.getAttribute("data-infinite") !== "false" &&
+            container.querySelector(".pagination__next")
+          ) {
             var dirPath = grid.getAttribute("data-path") || "";
             var startPage = parseInt(grid.getAttribute("data-page"), 10) || 1;
             // Applied filters (from the server-rendered grid), carried forward

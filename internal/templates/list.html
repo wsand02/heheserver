@@ -46,6 +46,7 @@
   data-type="{{ .TypesParam }}"
   data-query="{{ .FilterQuery }}"
   data-ext="{{ .FilterExt }}"
+  data-infinite="{{ .InfiniteScroll }}"
 >
   <div class="grid-sizer"></div>
   <div class="gutter-sizer"></div>
@@ -64,20 +65,23 @@
         />
       </div>
       {{ else if .IsVideo }}
-      <div class="card-image">
-        <video
-          controls
-          loop
-          playsinline
-          preload="metadata"
-          {{ if and $.Resize $.FFmpegExists }}
-          poster="{{ .GetVidThumb }}"
-          {{ end }}
-          class="media-cover"
-        >
-          <source src="{{ .GetUrl }}" />
-        </video>
-      </div>
+      <!-- Lazy video: a poster + play badge by default; the click handler in
+           base.html swaps in a live <video> only when clicked, so long
+           infinite-scroll sessions don't accumulate hundreds of media
+           elements. With JS off this is just a link to the /post/ view. -->
+      <a
+        class="card-image video-placeholder{{ if not (and $.Resize $.FFmpegExists) }} media-cover{{ end }}"
+        href="{{ .GetPostLink }}"
+        data-video="{{ .GetUrl }}"
+        {{ if and $.Resize $.FFmpegExists }}
+        data-poster="{{ .GetVidThumb }}"
+        {{ end }}
+      >
+        {{ if and $.Resize $.FFmpegExists }}
+        <img class="poster" src="{{ .GetVidThumb }}" alt="{{ .Filename }}" loading="lazy" />
+        {{ end }}
+        <span class="play-badge" aria-hidden="true">▶</span>
+      </a>
       {{ else if .IsAudio }}
       <div class="card-image" style="padding: 0.6rem">
         <audio controls style="width: 100%">
