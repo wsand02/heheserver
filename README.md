@@ -19,7 +19,7 @@ authentication or other security features required for safe exposure to the publ
 - `.heheignore` file omission — matching files are hidden from every directory index *and* made un-openable, as if they don't exist
 - Optional embedded gallery for images, video, and audio, with thumbnails and a single-item post view
 - Filter the gallery by file type, filename, or extension — updates in realtime, with a no-JavaScript fallback
-- Click-to-play videos in the gallery — a poster and play button by default, with the video loaded only when clicked, so long browsing sessions stay light
+- Thumbnail-only video tiles in the gallery — playback happens in the post view, so long browsing sessions stay light
 - Infinite scroll for large directories, with pagination as the no-JavaScript fallback (and an option to force pagination even with JavaScript)
 - Optional on-the-fly image resizing (pure-Go fallback, accelerated by ffmpeg when present)
 - Video thumbnails when ffmpeg is available
@@ -112,14 +112,15 @@ linking back to this repository.
 ### Browsing large directories
 
 With JavaScript, the gallery loads more items automatically as you scroll (infinite scroll).
-Video tiles show a poster and a play button by default; the actual video is only created when
-you click one, so scrolling past many videos in a long session doesn't keep growing browser
-memory. With JavaScript disabled, the gallery falls back to numbered pagination and each video
-tile is a plain link to its post view.
+Video tiles are thumbnails only — a poster (or a film icon when no thumbnail could be
+generated) linking to the post view, where the video plays. Videos never play in the grid
+itself, so browsing past hundreds of them doesn't keep growing browser memory. With
+JavaScript disabled, the gallery falls back to numbered pagination and behaves the same
+otherwise.
 
 If you'd rather always use pagination — for instance to keep memory bounded on very large
 directories — pass `-no-infinite-scroll`. The server pagination controls then stay visible even
-with JavaScript enabled, while click-to-play videos still work.
+with JavaScript enabled.
 
 ### Filtering
 

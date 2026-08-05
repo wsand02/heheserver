@@ -130,31 +130,56 @@ func TestListSpecialCharURLsNotBroken(t *testing.T) {
 	}
 }
 
-// TestListVideoAttributes guards that grid video tiles are lazy click-to-play
-// placeholders rather than eager <video> elements (issue #38: long
-// infinite-scroll sessions must not accumulate hundreds of live media
-// elements). The tile is an anchor carrying the raw video URL in data-video,
-// linking to the /post/ view as the no-JS fallback, and emits no eager
-// <source> that would load media on page load.
+// TestListVideoAttributes guards that grid video tiles are thumbnails only —
+// never playable media (issue #42: playing previews in the grid accumulated
+// live <video> elements for the rest of an infinite-scroll session and OOMed
+// iOS). The tile is an anchor to the /post/ view, where playback lives, and
+// carries no raw video URL for JS to turn into a player.
 func TestListVideoAttributes(t *testing.T) {
 	gc := &GalleryContext{
-		Items:       []models.GalleryItem{{Filename: "clip.mp4", Path: "/"}},
-		CurrentPage: 1,
-		MaxPage:     1,
+		Items:        []models.GalleryItem{{Filename: "clip.mp4", Path: "/"}},
+		Resize:       true,
+		FFmpegExists: true,
+		CurrentPage:  1,
+		MaxPage:      1,
 	}
 	body := renderList(t, gc)
 
 	if !strings.Contains(body, "video-placeholder") {
-		t.Errorf("grid video tile is not a lazy placeholder, got:\n%s", body)
-	}
-	if !strings.Contains(body, `data-video="/fs/clip.mp4"`) {
-		t.Errorf("placeholder missing raw video URL in data-video, got:\n%s", body)
+		t.Errorf("grid video tile is not a thumbnail placeholder, got:\n%s", body)
 	}
 	if !strings.Contains(body, `href="/post/?path=/clip.mp4"`) {
-		t.Errorf("placeholder missing no-JS post link, got:\n%s", body)
+		t.Errorf("video tile missing post link, got:\n%s", body)
 	}
-	if strings.Contains(body, "<source") {
-		t.Errorf("grid still emits an eager <source> (media loads on page load), got:\n%s", body)
+	if !strings.Contains(body, `src="/vidthumb/?path=/clip.mp4"`) {
+		t.Errorf("video tile missing poster thumbnail, got:\n%s", body)
+	}
+	// No playable media, and nothing for JS to build one from.
+	for _, banned := range []string{"data-video", "data-poster", "<video", "<source"} {
+		if strings.Contains(body, banned) {
+			t.Errorf("grid video tile still allows in-grid playback (%q present), got:\n%s", banned, body)
+		}
+	}
+}
+
+// TestListVideoNoPosterFallback covers the no-ffmpeg (or no -resize) case:
+// without a generated thumbnail the tile would be an empty black box, so it
+// falls back to a film icon inside the same reserved 16:9 box.
+func TestListVideoNoPosterFallback(t *testing.T) {
+	body := renderList(t, &GalleryContext{
+		Items:       []models.GalleryItem{{Filename: "clip.mp4", Path: "/"}},
+		CurrentPage: 1,
+		MaxPage:     1,
+	})
+
+	if strings.Contains(body, "/vidthumb/") {
+		t.Errorf("expected no poster without resize/ffmpeg, got:\n%s", body)
+	}
+	if !strings.Contains(body, `class="video-icon"`) {
+		t.Errorf("expected film-icon fallback when no poster is available, got:\n%s", body)
+	}
+	if !strings.Contains(body, `href="/post/?path=/clip.mp4"`) {
+		t.Errorf("fallback tile missing post link, got:\n%s", body)
 	}
 }
 
