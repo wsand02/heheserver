@@ -69,22 +69,32 @@
         />
       </div>
       {{ else if .IsVideo }}
-      <!-- Lazy video: a poster + play badge by default; the click handler in
-           base.html swaps in a live <video> only when clicked, so long
-           infinite-scroll sessions don't accumulate hundreds of media
-           elements. With JS off this is just a link to the /post/ view. -->
-      <a
-        class="card-image video-placeholder"
-        href="{{ .GetPostLink }}"
-        data-video="{{ .GetUrl }}"
-        {{ if and $.Resize $.FFmpegExists }}
-        data-poster="{{ .GetVidThumb }}"
-        {{ end }}
-      >
+      <!-- Video tiles are thumbnails only — the grid never creates a <video>.
+           Playback lives in the /post/ view, so a browsing session keeps at
+           most one live media element instead of accumulating one per preview
+           (issue #42). Without ffmpeg there's no poster, so a film icon fills
+           the reserved box instead of leaving it black. -->
+      <a class="card-image video-placeholder" href="{{ .GetPostLink }}">
         {{ if and $.Resize $.FFmpegExists }}
         <img class="poster" src="{{ .GetVidThumb }}" alt="{{ .Filename }}" loading="lazy" />
-        {{ end }}
         <span class="play-badge" aria-hidden="true">▶</span>
+        {{ else }}
+        <!-- The icon already reads as "video", so no play badge on top of it. -->
+        <svg
+          class="video-icon"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+          />
+        </svg>
+        {{ end }}
       </a>
       {{ else if .IsAudio }}
       <div class="card-image" style="padding: 0.6rem">

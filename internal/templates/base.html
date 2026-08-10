@@ -48,21 +48,12 @@
         max-height: 70vh;
         object-fit: contain;
       }
-      /* aspect-ratio here is only a placeholder box until the video's real
-         dimensions load (see the loadedmetadata handler in the gallery JS,
-         which overrides it per-video). object-fit:contain letterboxes rather
-         than cropping non-16:9 clips. */
-      .media-cover {
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        object-fit: contain;
-        background: #000;
-      }
-      /* Lazy-video tile: a 16:9 box with a centered play badge; the click
-         handler in the gallery JS replaces it with a real <video>. The box is
-         reserved up front (like the old eager <video class="media-cover">) so
-         the grid keeps its height while poster thumbnails are still generating
-         — otherwise the tiles collapse and the footer jumps up the page. */
+      /* Video tile: a 16:9 box holding a poster (or a film icon when there's no
+         ffmpeg to generate one) that links to the /post/ view. The grid never
+         creates a <video> — playback lives on the post page (issue #42). The
+         box is reserved up front so the grid keeps its height while poster
+         thumbnails are still generating — otherwise the tiles collapse and the
+         footer jumps up the page. */
       .video-placeholder {
         position: relative;
         display: block;
@@ -80,6 +71,17 @@
         width: 100%;
         height: 100%;
         object-fit: contain;
+      }
+      /* No-poster fallback (no ffmpeg): a centered film icon so the tile reads
+         as a video instead of an empty black box. */
+      .video-placeholder .video-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 30%;
+        max-width: 4rem;
+        color: rgba(255, 255, 255, 0.65);
       }
       .play-badge {
         position: absolute;
@@ -258,44 +260,11 @@
           imagesLoaded(grid).on("progress", function () {
             msnry.layout();
           });
-          // imagesLoaded ignores <video>, so size video tiles to their real
-          // aspect ratio once metadata (not the whole file) loads and relayout.
-          // Capture phase because loadedmetadata doesn't bubble; one listener on
-          // the grid also catches infinite-scroll-appended videos.
-          grid.addEventListener(
-            "loadedmetadata",
-            function (e) {
-              var v = e.target;
-              if (v.tagName === "VIDEO" && v.videoWidth) {
-                v.style.aspectRatio = v.videoWidth + " / " + v.videoHeight;
-                if (msnry) msnry.layout();
-              }
-            },
-            true
-          );
-          // Click-to-play: video tiles render as a poster + play badge and stay
-          // out of the browser's media budget until clicked. One delegated
-          // listener also covers infinite-scroll-appended tiles.
-          grid.addEventListener("click", function (e) {
-            var ph = e.target.closest && e.target.closest(".video-placeholder");
-            if (!ph) return;
-            e.preventDefault();
-            var video = document.createElement("video");
-            video.className = "media-cover";
-            video.controls = true;
-            video.loop = true;
-            video.autoplay = true;
-            video.playsInline = true;
-            video.preload = "metadata";
-            var poster = ph.getAttribute("data-poster");
-            if (poster) video.poster = poster;
-            var source = document.createElement("source");
-            source.src = ph.getAttribute("data-video");
-            video.appendChild(source);
-            ph.parentNode.replaceChild(video, ph);
-            // Real aspect ratio arrives via the loadedmetadata handler above.
-            if (msnry) msnry.layout();
-          });
+          // Video tiles are plain links to the /post/ view — no click handler,
+          // no <video> is ever created here. In-grid playback used to leave a
+          // live media element per played tile for the rest of an
+          // infinite-scroll session, which OOMed iOS (issue #42).
+          //
           // data-infinite="false" (the -no-infinite-scroll flag) keeps the
           // server pagination and skips Infinite Scroll entirely.
           if (
