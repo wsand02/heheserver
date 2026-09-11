@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -27,6 +28,12 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.H
 			if err != nil {
 				utils.HttpLogErr(w, r, err, "encode cached png", http.StatusInternalServerError)
 				return
+			}
+			return
+		}
+		if len(cImg.JPEG) > 0 {
+			if _, err := w.Write(cImg.JPEG); err != nil {
+				utils.HttpLogErr(w, r, err, "write cached jpeg", http.StatusInternalServerError)
 			}
 			return
 		}
@@ -67,13 +74,18 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.H
 		return
 	}
 
+	var encoded bytes.Buffer
+	if err := jpeg.Encode(&encoded, dst, nil); err != nil {
+		utils.HttpLogErr(w, r, err, "encode jpeg", http.StatusInternalServerError)
+		return
+	}
+	encodedJPEG := encoded.Bytes()
 	cache.GetResizeCache().Set(ctx, cache.ResizeCacheItem{
 		Image:       dst,
 		Transparent: transparent,
-	}, utils.GetCost(dst))
-	err = jpeg.Encode(w, dst, nil)
-	if err != nil {
-		utils.HttpLogErr(w, r, err, "encode jpeg", http.StatusInternalServerError)
-		return
+		JPEG:        encodedJPEG,
+	}, utils.GetCost(dst)+int64(len(encodedJPEG)))
+	if _, err := w.Write(encodedJPEG); err != nil {
+		utils.HttpLogErr(w, r, err, "write jpeg", http.StatusInternalServerError)
 	}
 }

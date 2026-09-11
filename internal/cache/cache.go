@@ -92,6 +92,7 @@ func NewIgnoreCache(size int64) error {
 type ResizeCacheItem struct {
 	image.Image
 	Transparent bool
+	JPEG        []byte
 }
 
 type ResizeCache struct {

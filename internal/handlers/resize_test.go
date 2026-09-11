@@ -32,6 +32,53 @@ func writePNG(t *testing.T, path string, w, h int) {
 	}
 }
 
+func benchmarkJPEGImage(b testing.TB) (*image.RGBA, []byte) {
+	b.Helper()
+	img := image.NewRGBA(image.Rect(0, 0, 300, 200))
+	for y := 0; y < 200; y++ {
+		for x := 0; x < 300; x++ {
+			img.Set(x, y, color.RGBA{uint8(x % 256), uint8(y % 256), 64, 255})
+		}
+	}
+	var encoded bytes.Buffer
+	if err := jpeg.Encode(&encoded, img, nil); err != nil {
+		b.Fatal(err)
+	}
+	return img, encoded.Bytes()
+}
+
+func BenchmarkResizeCacheHitReencode(b *testing.B) {
+	img, _ := benchmarkJPEGImage(b)
+	var output bytes.Buffer
+	output.Grow(16 * 1024)
+	b.ReportAllocs()
+	for b.Loop() {
+		output.Reset()
+		if err := jpeg.Encode(&output, img, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+	if output.Len() == 0 {
+		b.Fatal("expected encoded bytes")
+	}
+}
+
+func BenchmarkResizeCacheHitEncoded(b *testing.B) {
+	_, encoded := benchmarkJPEGImage(b)
+	var output bytes.Buffer
+	output.Grow(len(encoded))
+	b.ReportAllocs()
+	for b.Loop() {
+		output.Reset()
+		if _, err := output.Write(encoded); err != nil {
+			b.Fatal(err)
+		}
+	}
+	if output.Len() == 0 {
+		b.Fatal("expected cached bytes")
+	}
+}
+
 func TestResizeHandlerFallback(t *testing.T) {
 	if err := cache.NewResizeCache(1); err != nil {
 		t.Fatal(err)
@@ -51,7 +98,12 @@ func TestResizeHandlerFallback(t *testing.T) {
 	if _, err := jpeg.Decode(bytes.NewReader(w.Body.Bytes())); err != nil {
 		t.Fatalf("response body is not a decodable JPEG: %v", err)
 	}
+	firstBody := append([]byte(nil), w.Body.Bytes()...)
 	cache.GetResizeCache().Wait()
+	cached, ok := cache.GetResizeCache().Get("/pic.png")
+	if !ok || !bytes.Equal(cached.JPEG, firstBody) {
+		t.Fatal("expected encoded JPEG in resize cache")
+	}
 
 	// Second request: served from cache.
 	w = httptest.NewRecorder()
@@ -65,6 +117,9 @@ func TestResizeHandlerFallback(t *testing.T) {
 	}
 	if _, err := jpeg.Decode(bytes.NewReader(w.Body.Bytes())); err != nil {
 		t.Fatalf("cached body is not a decodable JPEG: %v", err)
+	}
+	if !bytes.Equal(w.Body.Bytes(), firstBody) {
+		t.Fatal("cached response body differs from the generated JPEG")
 	}
 }
 
