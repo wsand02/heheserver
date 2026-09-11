@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"image"
 	"image/color"
+	"image/jpeg"
 	"image/png"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,7 +16,7 @@ import (
 )
 
 // makePNG returns a w x h PNG encoded into a buffer.
-func makePNG(t *testing.T, w, h int) *bytes.Buffer {
+func makePNG(t testing.TB, w, h int) *bytes.Buffer {
 	t.Helper()
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
 	for y := 0; y < h; y++ {
@@ -69,5 +71,46 @@ func TestResizeImageFFmpeg(t *testing.T) {
 	}
 	if img.Bounds().Dx() != width {
 		t.Errorf("width = %d, want %d", img.Bounds().Dx(), width)
+	}
+}
+
+func BenchmarkResizeImageFallback(b *testing.B) {
+	source := makePNG(b, 600, 400).Bytes()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := ResizeImageFallback(bytes.NewReader(source)); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkJPEGEncode(b *testing.B) {
+	source := makePNG(b, 600, 400).Bytes()
+	img, err := ResizeImageFallback(bytes.NewReader(source))
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if err := jpeg.Encode(io.Discard, img, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkResizeAndJPEGEncode(b *testing.B) {
+	source := makePNG(b, 600, 400).Bytes()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		img, err := ResizeImageFallback(bytes.NewReader(source))
+		if err != nil {
+			b.Fatal(err)
+		}
+		if err := jpeg.Encode(io.Discard, img, nil); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

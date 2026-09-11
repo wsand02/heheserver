@@ -14,7 +14,7 @@ func makeTestVideo(t *testing.T) string {
 	path := filepath.Join(t.TempDir(), "clip.mp4")
 	cmd := exec.Command("ffmpeg", "-y", "-f", "lavfi",
 		"-i", "testsrc=duration=2:size=64x64:rate=10",
-		"-pix_fmt", "yuv420p", path)
+		"-t", "2", "-an", "-c:v", "mpeg4", "-pix_fmt", "yuv420p", path)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("failed to generate test video: %v\n%s", err, out)
 	}
