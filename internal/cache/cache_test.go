@@ -57,15 +57,16 @@ func TestVidThumbCacheRoundtrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	img := image.NewRGBA(image.Rect(0, 0, 2, 2))
+	item := VidThumbCacheItem{Image: img, JPEG: []byte{1, 2, 3}}
 	c := GetVidThumbCache()
-	c.Set("key", img, 4)
+	c.Set("key", item, 4)
 	c.Wait()
 
 	got, ok := c.Get("key")
 	if !ok {
 		t.Fatal("expected cached thumbnail, got miss")
 	}
-	if got == nil {
-		t.Error("cached thumbnail is nil")
+	if got.Image == nil || string(got.JPEG) != string(item.JPEG) {
+		t.Errorf("cached thumbnail not preserved: %+v", got)
 	}
 }

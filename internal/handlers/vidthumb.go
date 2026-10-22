@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"fmt"
-	"image"
 	"image/jpeg"
 	"net/http"
 	"path"
@@ -29,7 +28,7 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 	w.Header().Add("Cache-Control", "private, max-age=86400")
 	vtb, ok := cache.GetVidThumbCache().Get(ctx)
 	if ok {
-		writeVideoThumbnail(w, r, vtb, "encode cached thumbnail")
+		writeVideoThumbnail(w, r, vtb.JPEG)
 		return
 	}
 	head := make([]byte, 512)
@@ -62,24 +61,24 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 		if generateErr != nil {
 			return nil, generateErr
 		}
-		cache.GetVidThumbCache().Set(ctx, img, utils.GetCost(img))
-		return img, nil
+		var encoded bytes.Buffer
+		if encodeErr := jpeg.Encode(&encoded, img, nil); encodeErr != nil {
+			return nil, encodeErr
+		}
+		item := cache.VidThumbCacheItem{Image: img, JPEG: encoded.Bytes()}
+		cache.GetVidThumbCache().Set(ctx, item, utils.GetCost(img)+int64(len(item.JPEG)))
+		return item, nil
 	})
 	if err != nil {
 		utils.HttpLogErr(w, r, err, "generate thumbnail", http.StatusInternalServerError)
 		return
 	}
-	img := generated.(image.Image)
-	writeVideoThumbnail(w, r, img, "encode thumbnail")
+	item := generated.(cache.VidThumbCacheItem)
+	writeVideoThumbnail(w, r, item.JPEG)
 }
 
-func writeVideoThumbnail(w http.ResponseWriter, r *http.Request, img image.Image, encodeMessage string) {
-	var encoded bytes.Buffer
-	if err := jpeg.Encode(&encoded, img, nil); err != nil {
-		utils.HttpLogErr(w, r, err, encodeMessage, http.StatusInternalServerError)
-		return
-	}
-	if _, err := w.Write(encoded.Bytes()); err != nil {
+func writeVideoThumbnail(w http.ResponseWriter, r *http.Request, jpegBytes []byte) {
+	if _, err := w.Write(jpegBytes); err != nil {
 		utils.HttpLogWriteErr(r, err, "write thumbnail", http.StatusInternalServerError)
 	}
 }

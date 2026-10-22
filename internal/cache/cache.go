@@ -113,13 +113,18 @@ func NewResizeCache(size int64) error {
 	return nil
 }
 
+type VidThumbCacheItem struct {
+	Image image.Image
+	JPEG  []byte
+}
+
 type VidThumbCache struct {
-	*ristretto.Cache[string, image.Image]
+	*ristretto.Cache[string, VidThumbCacheItem]
 }
 
 func NewVidThumbCache(size int64) error {
 	size, nc := sizeToNCMB(size)
-	cache, err := ristretto.NewCache(&ristretto.Config[string, image.Image]{
+	cache, err := ristretto.NewCache(&ristretto.Config[string, VidThumbCacheItem]{
 		NumCounters: nc,
 		MaxCost:     size,
 		BufferItems: 64,

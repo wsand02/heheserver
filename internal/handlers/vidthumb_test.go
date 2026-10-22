@@ -70,6 +70,19 @@ func TestVidThumbHandler(t *testing.T) {
 	if _, err := jpeg.Decode(bytes.NewReader(w.Body.Bytes())); err != nil {
 		t.Fatalf("response body is not a decodable JPEG: %v", err)
 	}
+	firstBody := append([]byte(nil), w.Body.Bytes()...)
+	cache.GetVidThumbCache().Wait()
+	cached, ok := cache.GetVidThumbCache().Get("/clip.mp4")
+	if !ok || !bytes.Equal(cached.JPEG, firstBody) {
+		t.Fatal("expected encoded JPEG in video thumbnail cache")
+	}
+
+	w = httptest.NewRecorder()
+	r = httptest.NewRequest("GET", "/vidthumb/?path=/clip.mp4", nil)
+	VidThumbHandler(w, r, "/clip.mp4", hfs, cfg)
+	if w.Code != 200 || !bytes.Equal(w.Body.Bytes(), firstBody) {
+		t.Fatalf("cached response differs from generated JPEG: status=%d", w.Code)
+	}
 }
 
 func TestVidThumbHandlerNotAVideo(t *testing.T) {
@@ -103,7 +116,10 @@ func TestVidThumbHandlerWriteFailureDoesNotRenderError(t *testing.T) {
 		t.Fatal(err)
 	}
 	hfs := testHFS(t, dir)
-	cache.GetVidThumbCache().Set("/clip.mp4", image.NewRGBA(image.Rect(0, 0, 2, 2)), 4)
+	cache.GetVidThumbCache().Set("/clip.mp4", cache.VidThumbCacheItem{
+		Image: image.NewRGBA(image.Rect(0, 0, 2, 2)),
+		JPEG:  []byte{1, 2, 3},
+	}, 7)
 	cache.GetVidThumbCache().Wait()
 	w := &failingResponseWriter{}
 	r := httptest.NewRequest("GET", "/vidthumb/?path=/clip.mp4", nil)
