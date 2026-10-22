@@ -8,14 +8,14 @@
     <script>
       // Set the theme before first paint to avoid a flash of the wrong theme.
       (function () {
-        var saved = localStorage.getItem("theme");
+        var saved = localStorage.getItem('theme');
         var theme =
           saved ||
           (window.matchMedia &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light");
-        document.documentElement.setAttribute("data-theme", theme);
+          window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
       })();
     </script>
     <link rel="stylesheet" href="/static/glacialwisp.min.css" />
@@ -207,15 +207,25 @@
           class="btn btn-action"
           id="theme-toggle"
           aria-label="Toggle dark mode"
-          onclick="(function(){var h=document.documentElement;var n=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',n);localStorage.setItem('theme',n);document.getElementById('theme-toggle').textContent=n==='dark'?'☀️':'🌙';})()"
+          onclick="
+            (function () {
+              var h = document.documentElement;
+              var n =
+                h.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+              h.setAttribute('data-theme', n);
+              localStorage.setItem('theme', n);
+              document.getElementById('theme-toggle').textContent =
+                n === 'dark' ? '☀️' : '🌙';
+            })()
+          "
         ></button>
       </header>
       <script>
         // Match the toggle glyph to the active theme on load.
-        document.getElementById("theme-toggle").textContent =
-          document.documentElement.getAttribute("data-theme") === "dark"
-            ? "☀️"
-            : "🌙";
+        document.getElementById('theme-toggle').textContent =
+          document.documentElement.getAttribute('data-theme') === 'dark'
+            ? '☀️'
+            : '🌙';
       </script>
       {{ end }} {{ define "footer" }}
       <div class="divider" style="margin-top: 2rem"></div>
@@ -237,27 +247,27 @@
     <script src="/static/infinite-scroll.pkgd.min.js"></script>
     <script>
       (function () {
-        var container = document.getElementById("gallery-results");
+        var container = document.getElementById('gallery-results');
         if (!container) return; // post.html shares base — no results grid there
 
         // The filter form lives outside #gallery-results, so it survives the
         // realtime swap and its focused input keeps focus while typing.
-        var form = document.querySelector(".filter-bar");
+        var form = document.querySelector('.filter-bar');
         var msnry = null;
         var infScroll = null;
 
         // (Re)initialize masonry + infinite scroll on the current grid. Called
         // on first load and after every realtime results swap.
         function initGallery() {
-          var grid = container.querySelector(".grid");
+          var grid = container.querySelector('.grid');
           if (!grid) return;
           msnry = new Masonry(grid, {
-            itemSelector: ".grid-item",
-            columnWidth: ".grid-sizer",
-            gutter: ".gutter-sizer",
+            itemSelector: '.grid-item',
+            columnWidth: '.grid-sizer',
+            gutter: '.gutter-sizer',
             percentPosition: true,
           });
-          imagesLoaded(grid).on("progress", function () {
+          imagesLoaded(grid).on('progress', function () {
             msnry.layout();
           });
           // Video tiles are plain links to the /post/ view — no click handler,
@@ -268,16 +278,16 @@
           // data-infinite="false" (the -no-infinite-scroll flag) keeps the
           // server pagination and skips Infinite Scroll entirely.
           if (
-            grid.getAttribute("data-infinite") !== "false" &&
-            container.querySelector(".pagination__next")
+            grid.getAttribute('data-infinite') !== 'false' &&
+            container.querySelector('.pagination__next')
           ) {
-            var dirPath = grid.getAttribute("data-path") || "";
-            var startPage = parseInt(grid.getAttribute("data-page"), 10) || 1;
+            var dirPath = grid.getAttribute('data-path') || '';
+            var startPage = parseInt(grid.getAttribute('data-page'), 10) || 1;
             // Applied filters (from the server-rendered grid), carried forward
             // so later infinite-scroll pages stay filtered.
-            var filterType = grid.getAttribute("data-type") || "";
-            var filterQuery = grid.getAttribute("data-query") || "";
-            var filterExt = grid.getAttribute("data-ext") || "";
+            var filterType = grid.getAttribute('data-type') || '';
+            var filterQuery = grid.getAttribute('data-query') || '';
+            var filterExt = grid.getAttribute('data-ext') || '';
             infScroll = new InfiniteScroll(grid, {
               // Build the next-page URL explicitly from the real page number.
               // A selector/template path makes Infinite Scroll hunt for "the
@@ -285,26 +295,27 @@
               // segments (e.g. %2F, %3F) fool that heuristic and corrupt ?path=.
               path: function () {
                 var url =
-                  "?path=" +
+                  '?path=' +
                   encodeURIComponent(dirPath) +
-                  "&p=" +
+                  '&p=' +
                   (startPage + this.loadCount + 1);
                 // data-type is a comma-joined list; emit one type= per value.
                 if (filterType) {
-                  filterType.split(",").forEach(function (t) {
-                    url += "&type=" + encodeURIComponent(t);
+                  filterType.split(',').forEach(function (t) {
+                    url += '&type=' + encodeURIComponent(t);
                   });
                 }
-                if (filterQuery) url += "&q=" + encodeURIComponent(filterQuery);
-                if (filterExt) url += "&ext=" + encodeURIComponent(filterExt);
+                if (filterQuery) url += '&q=' + encodeURIComponent(filterQuery);
+                if (filterExt) url += '&ext=' + encodeURIComponent(filterExt);
                 return url;
               },
-              checkLastPage: ".pagination__next", // stop when a page has no Next link
-              status: ".page-load-status", // loading / end / error indicator
-              append: ".grid-item",
+              checkLastPage: '.pagination__next', // stop when a page has no Next link
+              status: '.page-load-status', // loading / end / error indicator
+              scrollThreshold: 1000,
+              append: '.grid-item',
               outlayer: msnry, // appended items get imagesLoaded + masonry.appended()
               history: false,
-              hideNav: ".pagination", // hide server pagination once JS drives loading
+              hideNav: '.pagination', // hide server pagination once JS drives loading
             });
           }
         }
@@ -325,18 +336,18 @@
         // Build a page-1 gallery URL from the live filter form.
         function formURL() {
           var params = new URLSearchParams();
-          params.set("path", form.elements["path"].value);
+          params.set('path', form.elements['path'].value);
           Array.prototype.forEach.call(
             form.querySelectorAll('input[name="type"]:checked'),
             function (cb) {
-              params.append("type", cb.value);
-            }
+              params.append('type', cb.value);
+            },
           );
-          var q = form.elements["q"].value.trim();
-          if (q) params.set("q", q);
-          var ext = form.elements["ext"].value.trim();
-          if (ext) params.set("ext", ext);
-          return "?" + params.toString();
+          var q = form.elements['q'].value.trim();
+          if (q) params.set('q', q);
+          var ext = form.elements['ext'].value.trim();
+          if (ext) params.set('ext', ext);
+          return '?' + params.toString();
         }
 
         // Realtime refetch: pull the filtered gallery and swap in its results.
@@ -346,27 +357,28 @@
           if (!form) return;
           var url = formURL();
           var token = ++refetchToken;
-          container.setAttribute("aria-busy", "true");
-          fetch(url, { headers: { "X-Requested-With": "fetch" } })
+          container.setAttribute('aria-busy', 'true');
+          fetch(url, { headers: { 'X-Requested-With': 'fetch' } })
             .then(function (r) {
               return r.text();
             })
             .then(function (html) {
               if (token !== refetchToken) return; // superseded by a newer request
-              var doc = new DOMParser().parseFromString(html, "text/html");
-              var fresh = doc.getElementById("gallery-results");
+              var doc = new DOMParser().parseFromString(html, 'text/html');
+              var fresh = doc.getElementById('gallery-results');
               if (!fresh) return;
               destroyGallery();
               container.innerHTML = fresh.innerHTML;
               initGallery();
-              container.removeAttribute("aria-busy");
+              container.removeAttribute('aria-busy');
               // Keep the address bar in sync so the filtered view is shareable
               // and reloadable. replaceState (not push) avoids a history entry
               // per keystroke.
-              history.replaceState(null, "", url);
+              history.replaceState(null, '', url);
             })
             .catch(function () {
-              if (token === refetchToken) container.removeAttribute("aria-busy");
+              if (token === refetchToken)
+                container.removeAttribute('aria-busy');
             });
         }
 
@@ -378,14 +390,21 @@
 
         if (form) {
           // The form still submits normally with JS disabled (no-JS fallback).
-          form.addEventListener("submit", function (e) {
+          form.addEventListener('submit', function (e) {
             e.preventDefault();
             clearTimeout(debounceTimer);
             refilter();
           });
           // input fires for both text fields (per keystroke) and checkboxes.
-          form.addEventListener("input", debouncedRefilter);
+          form.addEventListener('input', debouncedRefilter);
         }
+
+        // Back navigation may restore this page from the back-forward cache
+        // with an Infinite Scroll request still marked as loading. Reload the
+        // current URL so the gallery starts with clean request state.
+        window.addEventListener('pageshow', function (event) {
+          if (event.persisted) window.location.reload();
+        });
 
         initGallery();
       })();

@@ -2,15 +2,10 @@
 
 <div class="columns">
   <div class="column col-8 col-md-12 col-mx-auto">
-    <!-- Back navigation. Real href to the containing directory is the no-JS
-         (and open-in-new-tab) fallback; with JS and real history, prefer
-         history.back() so the exact filtered/scrolled gallery is restored. -->
+    <!-- Use the containing directory URL so this works even when the post was
+          opened directly or in a new tab with unrelated browser history. -->
     <div class="mb-2">
-      <a
-        href="{{ .GalleryURL }}"
-        class="btn btn-link"
-        onclick="if(history.length>1){history.back();return false;}"
-      >
+      <a href="{{ .GalleryURL }}" class="btn btn-link">
         <i class="icon icon-back"></i> Back to gallery
       </a>
     </div>
@@ -29,7 +24,10 @@
       </div>
       {{ else if .IsAudio }}
       <div class="card-body">
-        <div class="d-flex" style="align-items: center; gap: 0.6rem; margin-bottom: 1rem">
+        <div
+          class="d-flex"
+          style="align-items: center; gap: 0.6rem; margin-bottom: 1rem"
+        >
           <svg
             style="width: 2rem; height: 2rem; flex-shrink: 0"
             class="text-primary"
@@ -52,7 +50,14 @@
       </div>
       {{ else if .IsVideo }}
       <div class="card-image media-frame">
-        <video controls loop playsinline preload="metadata" class="media-contain" poster="">
+        <video
+          controls
+          loop
+          playsinline
+          preload="metadata"
+          class="media-contain"
+          poster=""
+        >
           <source src="{{ .GetPath }}" />
           Your browser does not support the video tag.
         </video>
@@ -80,13 +85,29 @@
 
       <!-- File info & actions -->
       <div class="card-body">
-        <div class="d-flex" style="align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap">
+        <div
+          class="d-flex"
+          style="
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+          "
+        >
           <div style="min-width: 0; flex: 1">
             <h2 class="h4" style="word-break: break-all; margin: 0">
               {{ .Filename }}
             </h2>
             {{ if or .Size .ModTime }}
-            <div class="text-gray" style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.25rem 1rem">
+            <div
+              class="text-gray"
+              style="
+                margin-top: 0.5rem;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.25rem 1rem;
+              "
+            >
               {{ if .Size }}<span>📦 {{ .SizeMB }} MB</span>{{ end }} {{ if
               .ModTime }}<span>📅 {{ .ModTime }}</span>{{ end }}
             </div>
@@ -101,7 +122,10 @@
         <div class="divider" style="margin: 1rem 0"></div>
         <div style="font-size: 0.7rem">
           <span class="text-gray">Raw link:</span>
-          <a href="{{ .GetPath }}" style="word-break: break-all; margin-left: 0.5rem">
+          <a
+            href="{{ .GetPath }}"
+            style="word-break: break-all; margin-left: 0.5rem"
+          >
             {{ .GetPath }}
           </a>
         </div>

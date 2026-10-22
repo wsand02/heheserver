@@ -15,6 +15,7 @@ import (
 	"github.com/wsand02/heheserver/internal/config"
 	"github.com/wsand02/heheserver/internal/fs"
 	"github.com/wsand02/heheserver/internal/resize"
+	"github.com/wsand02/heheserver/internal/thumbgen"
 	"github.com/wsand02/heheserver/internal/utils"
 )
 
@@ -61,31 +62,54 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.H
 		return
 	}
 
-	var dst image.Image
+	generated, err := thumbgen.Do("image:"+ctx, func() (any, error) {
+		if cImg, ok := cache.GetResizeCache().Get(ctx); ok {
+			return cImg, nil
+		}
 
-	if cfg.FFmpegExists {
-		fullName := filepath.Join(hfs.Root, ctx)
-		dst, err = resize.ResizeImage(fullName)
-	} else {
-		dst, err = resize.ResizeImageFallback(hf)
-	}
+		var dst image.Image
+		var resizeErr error
+		if cfg.FFmpegExists {
+			fullName := filepath.Join(hfs.Root, ctx)
+			dst, resizeErr = resize.ResizeImage(fullName)
+		} else {
+			dst, resizeErr = resize.ResizeImageFallback(hf)
+		}
+		if resizeErr != nil {
+			return nil, resizeErr
+		}
+
+		var encoded bytes.Buffer
+		if encodeErr := jpeg.Encode(&encoded, dst, nil); encodeErr != nil {
+			return nil, encodeErr
+		}
+		encodedJPEG := encoded.Bytes()
+		item := cache.ResizeCacheItem{
+			Image:       dst,
+			Transparent: transparent,
+			JPEG:        encodedJPEG,
+		}
+		cache.GetResizeCache().Set(ctx, item, utils.GetCost(dst)+int64(len(encodedJPEG)))
+		return item, nil
+	})
 	if err != nil {
 		utils.HttpLogErr(w, r, err, "resize image", http.StatusInternalServerError)
 		return
 	}
-
-	var encoded bytes.Buffer
-	if err := jpeg.Encode(&encoded, dst, nil); err != nil {
-		utils.HttpLogErr(w, r, err, "encode jpeg", http.StatusInternalServerError)
+	cImg = generated.(cache.ResizeCacheItem)
+	if cImg.Transparent {
+		if err := png.Encode(w, cImg.Image); err != nil {
+			utils.HttpLogErr(w, r, err, "encode cached png", http.StatusInternalServerError)
+		}
 		return
 	}
-	encodedJPEG := encoded.Bytes()
-	cache.GetResizeCache().Set(ctx, cache.ResizeCacheItem{
-		Image:       dst,
-		Transparent: transparent,
-		JPEG:        encodedJPEG,
-	}, utils.GetCost(dst)+int64(len(encodedJPEG)))
-	if _, err := w.Write(encodedJPEG); err != nil {
-		utils.HttpLogErr(w, r, err, "write jpeg", http.StatusInternalServerError)
+	if len(cImg.JPEG) > 0 {
+		if _, err := w.Write(cImg.JPEG); err != nil {
+			utils.HttpLogErr(w, r, err, "write cached jpeg", http.StatusInternalServerError)
+		}
+		return
+	}
+	if err := jpeg.Encode(w, cImg.Image, nil); err != nil {
+		utils.HttpLogErr(w, r, err, "encode cached jpeg", http.StatusInternalServerError)
 	}
 }

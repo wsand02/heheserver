@@ -132,10 +132,10 @@ func TestGalleryHandlerFilter(t *testing.T) {
 	cfg := &config.Config{Split: 64}
 
 	cases := []struct {
-		name       string
-		target     string
-		wantIn     []string
-		wantNotIn  []string
+		name      string
+		target    string
+		wantIn    []string
+		wantNotIn []string
 	}{
 		{
 			name:      "type image",
@@ -229,9 +229,9 @@ func TestPostContextGalleryURL(t *testing.T) {
 		path string
 		want string
 	}{
-		{"/folder/file.png", "?path=%2Ffolder%2F"},
-		{"/file.png", "?path=%2F"},
-		{"/a/b/c.mp4", "?path=%2Fa%2Fb%2F"},
+		{"/folder/file.png", "/?path=%2Ffolder%2F"},
+		{"/file.png", "/?path=%2F"},
+		{"/a/b/c.mp4", "/?path=%2Fa%2Fb%2F"},
 	}
 	for _, c := range cases {
 		pc := &PostContext{models.GalleryItem{Path: c.path}}

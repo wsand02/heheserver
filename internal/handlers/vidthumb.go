@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
+	"image"
 	"image/jpeg"
 	"net/http"
 	"path"
@@ -11,6 +13,7 @@ import (
 	"github.com/wsand02/heheserver/internal/cache"
 	"github.com/wsand02/heheserver/internal/config"
 	"github.com/wsand02/heheserver/internal/fs"
+	"github.com/wsand02/heheserver/internal/thumbgen"
 	"github.com/wsand02/heheserver/internal/utils"
 	"github.com/wsand02/heheserver/internal/vidthumb"
 )
@@ -26,11 +29,7 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 	w.Header().Add("Cache-Control", "private, max-age=86400")
 	vtb, ok := cache.GetVidThumbCache().Get(ctx)
 	if ok {
-		err = jpeg.Encode(w, vtb, nil)
-		if err != nil {
-			utils.HttpLogErr(w, r, err, "encode cached thumbnail", http.StatusInternalServerError)
-			return
-		}
+		writeVideoThumbnail(w, r, vtb, "encode cached thumbnail")
 		return
 	}
 	head := make([]byte, 512)
@@ -55,15 +54,32 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 		dir = "."
 	}
 	fullName := filepath.Join(dir, path)
-	img, err := vidthumb.GenerateThumb(fullName)
+	generated, err := thumbgen.Do("video:"+ctx, func() (any, error) {
+		if cached, ok := cache.GetVidThumbCache().Get(ctx); ok {
+			return cached, nil
+		}
+		img, generateErr := vidthumb.GenerateThumb(fullName)
+		if generateErr != nil {
+			return nil, generateErr
+		}
+		cache.GetVidThumbCache().Set(ctx, img, utils.GetCost(img))
+		return img, nil
+	})
 	if err != nil {
 		utils.HttpLogErr(w, r, err, "generate thumbnail", http.StatusInternalServerError)
 		return
 	}
-	cache.GetVidThumbCache().Set(ctx, img, utils.GetCost(img))
-	err = jpeg.Encode(w, img, nil)
-	if err != nil {
-		utils.HttpLogErr(w, r, err, "encode thumbnail", http.StatusInternalServerError)
+	img := generated.(image.Image)
+	writeVideoThumbnail(w, r, img, "encode thumbnail")
+}
+
+func writeVideoThumbnail(w http.ResponseWriter, r *http.Request, img image.Image, encodeMessage string) {
+	var encoded bytes.Buffer
+	if err := jpeg.Encode(&encoded, img, nil); err != nil {
+		utils.HttpLogErr(w, r, err, encodeMessage, http.StatusInternalServerError)
 		return
+	}
+	if _, err := w.Write(encoded.Bytes()); err != nil {
+		utils.HttpLogWriteErr(r, err, "write thumbnail", http.StatusInternalServerError)
 	}
 }

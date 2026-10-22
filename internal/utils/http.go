@@ -12,8 +12,17 @@ import (
 // HttpLogErr logs the failure with request context (status, method, requested
 // URL) and the underlying error, then renders a styled error page to the client.
 func HttpLogErr(w http.ResponseWriter, r *http.Request, err error, msg string, code int) {
-	log.Printf("[%d] %s %s — %s: %v", code, r.Method, r.URL.RequestURI(), msg, err)
+	logHTTPError(r, err, msg, code)
 	templates.RenderError(w, code, msg)
+}
+
+// HttpLogWriteErr logs a response write failure without attempting another response.
+func HttpLogWriteErr(r *http.Request, err error, msg string, code int) {
+	logHTTPError(r, err, msg, code)
+}
+
+func logHTTPError(r *http.Request, err error, msg string, code int) {
+	log.Printf("[%d] %s %s — %s: %v", code, r.Method, r.URL.RequestURI(), msg, err)
 }
 
 // StatusForErr maps a filesystem error to an HTTP status code.
