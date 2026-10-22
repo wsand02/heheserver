@@ -5,10 +5,38 @@
     <!-- Use the containing directory URL so this works even when the post was
           opened directly or in a new tab with unrelated browser history. -->
     <div class="mb-2">
-      <a href="{{ .GalleryURL }}" class="btn btn-link">
+      <a id="back-to-gallery" href="{{ .GalleryURL }}" class="btn btn-link">
         <i class="icon icon-back"></i> Back to gallery
       </a>
     </div>
+    <script>
+      (function () {
+        var link = document.getElementById('back-to-gallery');
+        if (!link || !document.referrer) return;
+
+        var previous;
+        try {
+          previous = new URL(document.referrer);
+        } catch (_) {
+          return;
+        }
+        var gallery = new URL(link.href);
+        if (
+          previous.origin !== window.location.origin ||
+          previous.pathname !== '/' ||
+          previous.searchParams.get('path') !== gallery.searchParams.get('path')
+        ) {
+          return;
+        }
+
+        link.addEventListener('click', function (event) {
+          if (window.history.length > 1) {
+            event.preventDefault();
+            window.history.back();
+          }
+        });
+      })();
+    </script>
 
     <!-- Main card -->
     <div class="card">

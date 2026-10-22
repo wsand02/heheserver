@@ -398,13 +398,6 @@
           form.addEventListener('input', debouncedRefilter);
         }
 
-        // Back navigation may restore this page from the back-forward cache
-        // with an Infinite Scroll request still marked as loading. Reload the
-        // current URL so the gallery starts with clean request state.
-        window.addEventListener('pageshow', function (event) {
-          if (event.persisted) window.location.reload();
-        });
-
         initGallery();
       })();
     </script>

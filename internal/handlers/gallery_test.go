@@ -256,6 +256,11 @@ func TestPostHandler(t *testing.T) {
 	if w.Code != 200 {
 		t.Errorf("file: status = %d, want 200 (body: %s)", w.Code, w.Body.String())
 	}
+	for _, want := range []string{`id="back-to-gallery"`, "window.history.back()"} {
+		if !strings.Contains(w.Body.String(), want) {
+			t.Errorf("post page missing back-navigation behavior %q", want)
+		}
+	}
 
 	// A directory path is rejected.
 	w = httptest.NewRecorder()
