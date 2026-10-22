@@ -4,7 +4,9 @@ import (
 	"errors"
 	"io/fs"
 	"log"
+	"net"
 	"net/http"
+	"syscall"
 
 	"github.com/wsand02/heheserver/internal/templates"
 )
@@ -18,7 +20,17 @@ func HttpLogErr(w http.ResponseWriter, r *http.Request, err error, msg string, c
 
 // HttpLogWriteErr logs a response write failure without attempting another response.
 func HttpLogWriteErr(r *http.Request, err error, msg string, code int) {
+	if isClientDisconnect(err) {
+		return
+	}
 	logHTTPError(r, err, msg, code)
+}
+
+func isClientDisconnect(err error) bool {
+	return errors.Is(err, net.ErrClosed) ||
+		errors.Is(err, syscall.ECONNRESET) ||
+		errors.Is(err, syscall.ECONNABORTED) ||
+		errors.Is(err, syscall.EPIPE)
 }
 
 func logHTTPError(r *http.Request, err error, msg string, code int) {
