@@ -2,6 +2,7 @@ import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cleanup,
+  act,
   fireEvent,
   render,
   screen,
@@ -45,8 +46,47 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 describe("routing", () => {
+  it("ignores queued callbacks from an old infinite-scroll observer", async () => {
+    const callbacks: Array<() => void> = [];
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        constructor(
+          callback: (entries: Array<{ isIntersecting: boolean }>) => void,
+        ) {
+          callbacks.push(() => callback([{ isIntersecting: true }]));
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    const second = { ...item, name: "second.png", path: "/second.png" };
+    const fetcher = vi.fn((url: string) =>
+      response(
+        new URL(url, location.origin).searchParams.get("p") === "2"
+          ? { ...collection, page: 2, items: [second] }
+          : collection,
+      ),
+    );
+    vi.stubGlobal("fetch", fetcher);
+    render(<App />);
+    await screen.findByRole("link", { name: "photo.png" });
+    const queued = callbacks[0];
+    await act(async () => {
+      queued();
+      // Deliver another notification after the request settles, while React
+      // is still batching the page update inside this act scope.
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+      queued();
+    });
+    await screen.findByRole("link", { name: "second.png" });
+    await act(async () => queued());
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(screen.getAllByRole("link", { name: "second.png" })).toHaveLength(1);
+  });
   it("keeps escaped paths and filters", () => {
     expect(apiURL("media", "/post/?path=%2Fc%2B%2B.png&type=image")).toBe(
       "/api/media?path=%2Fc%2B%2B.png&type=image",

@@ -68,8 +68,10 @@ test("infinite-scroll viewer preserves tiles, scroll, focus, and history", async
     page.getByRole("link", { name: "Image 13", exact: true }),
   ).toBeVisible();
   const tile = page.getByRole("link", { name: "Image 13", exact: true });
+  await expect(tile).toHaveCount(1);
   await tile.scrollIntoViewIfNeeded();
   await tile.focus();
+  await expect(page.locator(".grid")).toHaveAttribute("aria-busy", "false");
   const y = await page.evaluate(() => scrollY);
   const count = await page.locator("article").count();
   await tile.click();
