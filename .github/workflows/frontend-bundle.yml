@@ -1,0 +1,86 @@
+name: Rebuild frontend bundle
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - web/package.json
+      - web/pnpm-lock.yaml
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: Dependency pull request number to rebuild
+        type: number
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: frontend-build-${{ github.event.pull_request.number || inputs.pull_request }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Resolve dependency PR
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const number = Number(context.payload.pull_request?.number || context.payload.inputs?.pull_request);
+            const {data: pr} = await github.rest.pulls.get({...context.repo, pull_number: number});
+            const files = await github.paginate(github.rest.pulls.listFiles, {...context.repo, pull_number: number, per_page: 100});
+            const manifests = new Set(['web/package.json', 'web/pnpm-lock.yaml']);
+            const allowed = path => manifests.has(path) || path.startsWith('internal/frontend/dist/');
+            const eligible = pr.state === 'open' && pr.base.ref === 'master' &&
+              pr.head.repo?.full_name === process.env.GITHUB_REPOSITORY &&
+              files.some(file => manifests.has(file.filename)) &&
+              files.length === pr.changed_files &&
+              files.every(file => allowed(file.filename) && (!file.previous_filename || allowed(file.previous_filename)));
+            core.setOutput('eligible', String(eligible));
+            core.setOutput('sha', pr.head.sha);
+            if (!eligible) { core.info('Only dependency-only PRs in this repository are rebuilt.'); return; }
+            const fs = require('node:fs');
+            const directory = `${process.env.RUNNER_TEMP}/frontend-bundle`;
+            fs.mkdirSync(directory, {recursive: true});
+            fs.writeFileSync(`${directory}/metadata.json`, JSON.stringify({number, sha: pr.head.sha}));
+      - uses: actions/checkout@v4
+        if: steps.pr.outputs.eligible == 'true'
+        with:
+          ref: ${{ steps.pr.outputs.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        if: steps.pr.outputs.eligible == 'true'
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@v4
+        if: steps.pr.outputs.eligible == 'true'
+        with:
+          node-version-file: web/.node-version
+      - name: Build locked dependencies
+        if: steps.pr.outputs.eligible == 'true'
+        working-directory: web
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+      - name: Package changed assets
+        if: steps.pr.outputs.eligible == 'true'
+        id: bundle
+        run: |
+          if [ -z "$(git status --porcelain -- internal/frontend/dist)" ]; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          tar -C internal/frontend/dist -czf "$RUNNER_TEMP/frontend-bundle/bundle.tar.gz" .
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        if: steps.bundle.outputs.changed == 'true'
+        with:
+          name: frontend-bundle
+          path: ${{ runner.temp }}/frontend-bundle/
+          retention-days: 2
+          if-no-files-found: error

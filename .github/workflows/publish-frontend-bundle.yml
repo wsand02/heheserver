@@ -1,0 +1,55 @@
+name: Commit frontend bundle
+
+on:
+  workflow_run:
+    workflows: [Rebuild frontend bundle]
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: frontend-publish-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  commit:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      (github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'workflow_dispatch') &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      actions: write
+      pull-requests: write
+    steps:
+      - name: Find bundle artifact
+        id: artifact
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
+              ...context.repo, run_id: context.payload.workflow_run.id, per_page: 100,
+            });
+            core.setOutput('exists', String(artifacts.some(artifact => artifact.name === 'frontend-bundle' && !artifact.expired)));
+      # Only default-branch code runs with write access. PR code and artifacts
+      # are never executed in this job, including install/build hooks.
+      - uses: actions/checkout@v4
+        if: steps.artifact.outputs.exists == 'true'
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        if: steps.artifact.outputs.exists == 'true'
+        with:
+          name: frontend-bundle
+          path: ${{ runner.temp }}/frontend-bundle
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - name: Commit generated files and dispatch CI
+        if: steps.artifact.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUNDLE_DIRECTORY: ${{ runner.temp }}/frontend-bundle
+        run: python3 .github/scripts/publish_frontend_bundle.py

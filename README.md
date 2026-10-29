@@ -143,6 +143,17 @@ Commit frontend source, `web/pnpm-lock.yaml`, and rebuilt `internal/frontend/dis
 CI rebuilds and checks for differences, then runs browser tests on desktop and phone-sized
 viewports. Frontend output is bundled locally; source maps are not shipped.
 
+Dependency-only PRs in this repository (Dependabot or manual updates to `web/package.json`
+and `web/pnpm-lock.yaml`) automatically rebuild changed assets. A read-only build uploads
+the generated bundle; a separate workflow commits only `internal/frontend/dist/` back to
+the PR and explicitly starts CI on that commit. No personal access token is needed.
+Source changes and fork PRs still require contributors to include their own rebuilt assets.
+
+The publishing workflow becomes active after these workflows are merged into `master`.
+For dependency PRs already open at that point, run **Rebuild frontend bundle** from the
+Actions tab and enter the PR number. Older branches are updated from `master` when needed
+to inherit dispatchable CI, then rebuilt. Unchanged bundles produce no extra commit.
+
 Read-only JSON endpoints `/api/gallery` and `/api/media` use the existing `path`, `type`,
 `q`, `ext`, and `p` query parameters. Directory listings include pagination and media URLs;
 media responses include adjacent viewer URLs and a gallery-return URL. File access and
