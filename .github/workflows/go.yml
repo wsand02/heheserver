@@ -16,6 +16,7 @@ jobs:
       - run: go test -race ./...
   frontend:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: web
@@ -35,5 +36,7 @@ jobs:
       - run: pnpm build
       - name: Verify committed frontend output
         run: node scripts/verify-dist.mjs
-      - run: pnpm exec playwright install --with-deps chromium
+      - name: Install Chromium
+        timeout-minutes: 5
+        run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:browser
