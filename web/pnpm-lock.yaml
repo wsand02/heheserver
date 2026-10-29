@@ -162,13 +162,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  '@vitest/mocker@>=2.1.0-beta.7 <4.1.12': ^4.1.12
-  tinypool@<2.1.2: ^2.1.2
-  vite@>=7.0.0 <=7.3.6: ^7.3.7
-  vitest@<3.2.6: ^3.2.6
-  vitest@>=2.1.0 <4.1.11: ^4.1.11
-
 importers:
 
   .:
@@ -202,10 +195,10 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
       vite:
-        specifier: ^7.3.7
+        specifier: 7.3.7
         version: 7.3.7
       vitest:
-        specifier: ^4.1.12
+        specifier: 4.1.12
         version: 4.1.12(jsdom@26.1.0)(vite@7.3.7)
 
 packages:
@@ -611,7 +604,7 @@ packages:
     resolution: {integrity: sha512-fKShNpKZzupWZuY0z7egydvL0sqW4INEZBEExMBMAa6izlENEVHwoXgdaTCaBZ5fwlr4xf2o1wXC83n9RpO+NA==}
     peerDependencies:
       msw: ^2.4.9
-      vite: ^7.3.7
+      vite: ^6.0.0 || ^7.0.0 || ^8.0.0
     peerDependenciesMeta:
       msw:
         optional: true
@@ -955,7 +948,7 @@ packages:
       '@vitest/ui': 4.1.12
       happy-dom: '*'
       jsdom: '*'
-      vite: ^7.3.7
+      vite: ^6.0.0 || ^7.0.0 || ^8.0.0
     peerDependenciesMeta:
       '@edge-runtime/vm':
         optional: true

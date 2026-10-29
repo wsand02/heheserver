@@ -1,8 +1,2 @@
 allowBuilds:
   esbuild: true
-overrides:
-  '@vitest/mocker@>=2.1.0-beta.7 <4.1.12': ^4.1.12
-  tinypool@<2.1.2: ^2.1.2
-  vite@>=7.0.0 <=7.3.6: ^7.3.7
-  vitest@<3.2.6: ^3.2.6
-  vitest@>=2.1.0 <4.1.11: ^4.1.11
