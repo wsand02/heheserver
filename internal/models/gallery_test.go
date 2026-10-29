@@ -11,6 +11,7 @@ func TestGalleryItem_TypeCategory(t *testing.T) {
 	}{
 		{"dir", "photos", true, "dir"},
 		{"image", "cat.png", false, "image"},
+		{"animated image", "cat.GIF", false, "image"},
 		{"video", "clip.mp4", false, "video"},
 		{"audio", "song.ogg", false, "audio"},
 		{"other", "notes.txt", false, "other"},
@@ -114,6 +115,8 @@ func TestGalleryItem_IsImage(t *testing.T) {
 		filename string
 		want     bool
 	}{
+		{name: "gif", filename: "animated.gif", want: true},
+		{name: "GIF", filename: "animated.GIF", want: true},
 		{
 			name:     "jpeg",
 			filename: "hello.jpeg",

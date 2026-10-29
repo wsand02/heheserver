@@ -7,9 +7,9 @@ import (
 
 	"github.com/wsand02/heheserver/internal/cache"
 	"github.com/wsand02/heheserver/internal/config"
+	"github.com/wsand02/heheserver/internal/frontend"
 	"github.com/wsand02/heheserver/internal/fs"
 	"github.com/wsand02/heheserver/internal/handlers"
-	"github.com/wsand02/heheserver/internal/templates"
 )
 
 type Server struct {
@@ -55,10 +55,11 @@ func (s *Server) initCache() {
 func (s *Server) setupRoutes() {
 	if s.config.Gallery {
 		fmt.Println("Enabling Gallery")
-		s.mux.Handle("/static/", templates.StaticHandler())
+		s.mux.HandleFunc("/api/", handlers.UnknownAPI)
+		s.mux.Handle("GET /api/gallery", s.makeHfsInjector(handlers.GalleryAPI))
+		s.mux.Handle("GET /api/media", s.makeHfsInjector(handlers.MediaAPI))
 		s.mux.Handle("/fs/", http.StripPrefix("/fs", http.FileServer(s.hfs)))
-		s.mux.Handle("/post/", s.makeHfsInjector(handlers.PostHandler))
-		s.mux.HandleFunc("/", s.makeHfsInjector(handlers.GalleryHandler))
+		s.mux.Handle("/", frontend.Handler())
 		if s.config.Resize {
 			fmt.Println("Enabling Resize Endpoint")
 			s.mux.HandleFunc("/resize/", s.makeHfsInjector(handlers.ResizeHandler))
