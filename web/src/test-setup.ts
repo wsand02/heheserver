@@ -8,6 +8,8 @@ Object.defineProperty(window, "matchMedia", {
 });
 Object.defineProperty(window, "scrollTo", { value: vi.fn() });
 Object.defineProperty(window, "IntersectionObserver", {
+  configurable: true,
+  writable: true,
   value: class {
     observe() {}
     disconnect() {}

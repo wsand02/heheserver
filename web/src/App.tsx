@@ -125,6 +125,7 @@ export function App() {
   const trigger = useRef<HTMLElement | null>(null);
   const generation = useRef(0);
   const loading = useRef(false);
+  const loadedPage = useRef(0);
   const [theme, setTheme] = useState(() => {
     try {
       return localStorage.getItem("theme") || "auto";
@@ -172,6 +173,7 @@ export function App() {
     const id = ++generation.current;
     const abort = new AbortController();
     loading.current = true;
+    loadedPage.current = 0;
     setBusy(true);
     setError("");
     setItems([]);
@@ -179,6 +181,7 @@ export function App() {
     getJSON<Gallery>(apiURL("gallery", galleryRoute), abort.signal)
       .then((d) => {
         if (id === generation.current && !abort.signal.aborted) {
+          loadedPage.current = d.page;
           setData(d);
           setItems(d.items);
           setPage(d.page);
@@ -196,7 +199,15 @@ export function App() {
     return () => abort.abort();
   }, [galleryRoute, retry]);
   async function loadMore() {
-    if (!data || loading.current || page >= data.pages) return;
+    // A queued observer callback can still capture the previous render's page
+    // after a response finishes but before React commits the new page state.
+    if (
+      !data ||
+      loading.current ||
+      page !== loadedPage.current ||
+      page >= data.pages
+    )
+      return;
     const id = generation.current;
     loading.current = true;
     setBusy(true);
@@ -209,6 +220,7 @@ export function App() {
         new AbortController().signal,
       );
       if (id === generation.current) {
+        loadedPage.current = d.page;
         setItems((old) => [...old, ...d.items]);
         setPage(d.page);
       }
@@ -223,14 +235,18 @@ export function App() {
   }
   useEffect(() => {
     if (!data?.infinite || overlay || error || !sentinel.current) return;
+    let active = true;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) void loadMore();
+        if (active && entries.some((e) => e.isIntersecting)) void loadMore();
       },
       { rootMargin: "300px" },
     );
     observer.observe(sentinel.current);
-    return () => observer.disconnect();
+    return () => {
+      active = false;
+      observer.disconnect();
+    };
   }, [data, page, busy, overlay, error]);
   function visit(u: string, replace = false) {
     if (replace) history.replaceState(null, "", u);
