@@ -29,7 +29,7 @@ func (gi *GalleryItem) SizeMB() float64 {
 func (gi *GalleryItem) IsImage() bool {
 	ext := strings.ToLower(filepath.Ext(gi.Filename))
 	switch ext {
-	case ".jpg", ".jpeg", ".png", ".webp", ".svg":
+	case ".jpg", ".jpeg", ".png", ".webp", ".svg", ".gif":
 		return true
 	default:
 		return false
@@ -54,6 +54,7 @@ func (gi *GalleryItem) IsAudio() bool {
 		return false
 	}
 }
+
 // TypeCategory classifies the item into a single filter bucket:
 // "dir", "image", "video", "audio", or "other". It is the single source of
 // truth for type-based filtering, built on the Is* predicates above.

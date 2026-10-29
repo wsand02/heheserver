@@ -108,30 +108,34 @@ func TestGalleryServerMode(t *testing.T) {
 	}
 }
 
-// TestGalleryStaticAssets covers issue #16: the gallery must serve its CSS from the
-// embedded /static/ route so styling works with no internet access.
+// The application shell references local embedded assets and unknown routes never fall back to it.
 func TestGalleryStaticAssets(t *testing.T) {
-	dir := setupTestDir(t)
-
-	ts := testServer(t, dir, true, false)
-	client := ts.Client()
-
-	for _, name := range []string{"glacialwisp.min.css", "glacialwisp-icons.min.css"} {
-		resp, err := client.Get(ts.URL + "/static/" + name)
+	ts := testServer(t, setupTestDir(t), true, false)
+	resp, err := ts.Client().Get(ts.URL + "/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	html := string(body)
+	marker := `src="/assets/`
+	start := strings.Index(html, marker)
+	if start < 0 {
+		t.Fatal("shell must reference embedded JavaScript")
+	}
+	asset := strings.Split(html[start+len(`src="`):], `"`)[0]
+	for _, target := range []string{asset, "/assets/missing.js", "/api/missing", "/unknown", "/fs/missing"} {
+		res, err := ts.Client().Get(ts.URL + target)
 		if err != nil {
-			t.Fatal(err.Error())
+			t.Fatal(err)
 		}
-		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("GET /static/%s => %d, want 200", name, resp.StatusCode)
+		res.Body.Close()
+		want := 404
+		if target == asset {
+			want = 200
 		}
-		if ct := resp.Header.Get("Content-Type"); !strings.HasPrefix(ct, "text/css") {
-			t.Fatalf("GET /static/%s content-type = %q, want text/css", name, ct)
-		}
-		if len(body) == 0 {
-			t.Fatalf("GET /static/%s returned empty body", name)
+		if res.StatusCode != want {
+			t.Errorf("%s: %d, want %d", target, res.StatusCode, want)
 		}
 	}
 }
@@ -179,6 +183,25 @@ func TestGallerySpecialCharFilenames(t *testing.T) {
 		resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("GET %s => %d, want 200", u, resp.StatusCode)
+		}
+	}
+}
+
+func TestAPIRoutingAndMethods(t *testing.T) {
+	srv := NewServer(&config.Config{Gallery: true, Split: 1, Directory: setupTestDir(t), IgnoreCacheSize: 1})
+	for _, tc := range []struct {
+		method, path string
+		status       int
+	}{
+		{"GET", "/api/missing", 404},
+		{"POST", "/api/gallery", 405},
+		{"POST", "/api/media", 405},
+		{"GET", "/api/gallery?path=/missing", 404},
+	} {
+		w := httptest.NewRecorder()
+		srv.mux.ServeHTTP(w, httptest.NewRequest(tc.method, tc.path, nil))
+		if w.Code != tc.status || !strings.HasPrefix(w.Header().Get("Content-Type"), "application/json") {
+			t.Errorf("%s %s: %d %s", tc.method, tc.path, w.Code, w.Body.String())
 		}
 	}
 }

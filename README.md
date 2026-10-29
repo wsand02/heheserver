@@ -16,9 +16,9 @@ authentication or other security features required for safe exposure to the publ
 - Single static binary
 - `.heheignore` file omission — matching files are hidden from every directory index *and* made un-openable, as if they don't exist
 - Optional embedded gallery for images, video, and audio, with thumbnails and a single-item post view
-- Filter the gallery by file type, filename, or extension — updates in realtime, with a no-JavaScript fallback
+- Filter the gallery by file type, filename, or extension — updates in realtime, with shareable filter URLs
 - Thumbnail-only video tiles in the gallery — playback happens in the post view, so long browsing sessions stay light
-- Infinite scroll for large directories, with pagination as the no-JavaScript fallback (and an option to force pagination even with JavaScript)
+- Infinite scroll for large directories, with an option to force pagination
 - Optional on-the-fly image resizing (pure-Go fallback, accelerated by ffmpeg when present)
 - Video thumbnails when ffmpeg is available
 
@@ -96,47 +96,57 @@ Supports subdirectory heheignore files.
 
 ## Gallery view
 
-Enable the gallery with `-g`. Instead of the plain directory listing, heheserver renders a
-thumbnail grid of the current directory with breadcrumb navigation. Images, video, and audio
-are recognised and previewed inline; clicking an item opens a single-item post view for it.
-Large directories are paginated (`-s` controls items per page). The gallery respects
-`.heheignore`, so omitted files never appear.
+Enable the React gallery with `-g`. JavaScript is required. The gallery and its dependencies
+are embedded in the executable and work without a CDN or external network access. Plain
+file-server mode (without `-g`) remains available.
 
-Add `-r` to enable on-the-fly image resizing (used for thumbnails). If ffmpeg is on your
-`PATH`, video thumbnails are generated too; otherwise image resizing falls back to a pure-Go
-implementation and video thumbnails are skipped. The current version is shown in the footer,
-linking back to this repository.
+Add `-r` for resized image previews and, when ffmpeg is available, video thumbnails.
+Browse using breadcrumbs and filename, type, and extension filters. Filters apply to the
+entire directory before pagination. Results use deterministic filename ordering.
 
-### Browsing large directories
+Click an image, video, or audio tile to open the viewer. Previous/next controls and keyboard
+arrows move through matching media in the same directory, including items on other pages.
+Escape, Close, or browser Back returns to the gallery without losing loaded tiles or scroll
+position. Direct `/post/?path=...` links open a standalone viewer. Playback never starts
+automatically, and leaving an item releases its media resources.
 
-With JavaScript, the gallery loads more items automatically as you scroll (infinite scroll).
-Video tiles are thumbnails only — a poster (or a film icon when no thumbnail could be
-generated) linking to the post view, where the video plays. Videos never play in the grid
-itself, so browsing past hundreds of them doesn't keep growing browser memory. With
-JavaScript disabled, the gallery falls back to numbered pagination and behaves the same
-otherwise.
+Directories load more items as you scroll. Use `-no-infinite-scroll` for explicit pagination;
+`-s` controls page size. Theme selection supports system, light, and dark appearances.
 
-If you'd rather always use pagination — for instance to keep memory bounded on very large
-directories — pass `-no-infinite-scroll`. The server pagination controls then stay visible even
-with JavaScript enabled.
+Supported images: `.jpg`, `.jpeg`, `.png`, `.webp`, `.svg`, `.gif` (including animation); video: `.mov`, `.mp4`, `.m4v`,
+`.webm`; audio: `.mp3`, `.wav`, `.ogg`, `.m4a`. Browser codec support determines playback.
 
-### Filtering
+## Frontend development
 
-A filter bar above the grid narrows the current directory by **file type** (image / video /
-audio / folder / other), **filename** (case-insensitive substring), and **file extension**
-(comma-separated, e.g. `.png, .mp4`). Multiple filters combine with AND. Filtering is done on
-the server across the *whole* directory (not just the pages already loaded), so it stays
-correct for large directories and works together with pagination and infinite scroll.
+Go builds and `go install` use committed production assets in `internal/frontend/dist/`.
+They do not invoke Node or pnpm. Frontend contributors need the Node version in
+`web/.node-version` and the pnpm version pinned in `web/package.json`.
 
-With JavaScript the results update in realtime as you type or toggle a checkbox, and the URL
-stays in sync so a filtered view is shareable and reloadable. With JavaScript disabled the same
-filter bar still works as a plain form — press **Apply** to reload the filtered listing.
+```sh
+cd web
+pnpm install --frozen-lockfile
+pnpm dev
+```
 
-Supported types:
+Run the Go server separately with `go run . -g -r /path/to/media` on port 3400. Vite proxies
+API, raw-file, and thumbnail requests to that server. Its default dev URL is localhost:5173.
 
-- **Images:** `.jpg` `.jpeg` `.png` `.webp` `.svg` (resizable: `.jpg` `.jpeg` `.png`)
-- **Video:** `.mov` `.mp4` `.m4v` `.webm`
-- **Audio:** `.mp3` `.wav` `.ogg` `.m4a`
+```sh
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm exec playwright install chromium
+pnpm test:browser
+```
+
+Commit frontend source, `web/pnpm-lock.yaml`, and rebuilt `internal/frontend/dist/` together.
+CI rebuilds and checks for differences, then runs browser tests on desktop and phone-sized
+viewports. Frontend output is bundled locally; source maps are not shipped.
+
+Read-only JSON endpoints `/api/gallery` and `/api/media` use the existing `path`, `type`,
+`q`, `ext`, and `p` query parameters. Directory listings include pagination and media URLs;
+media responses include adjacent viewer URLs and a gallery-return URL. File access and
+listings share `.heheignore` enforcement.
 
 ## License
 
