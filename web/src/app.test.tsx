@@ -10,6 +10,7 @@ import {
 } from "@testing-library/react";
 import { App } from "./App";
 import { Viewer } from "./Viewer";
+import { Player } from "./components/Player";
 import { apiURL, galleryURL, type Item } from "./api";
 const item: Item = {
   name: "photo.png",
@@ -40,6 +41,66 @@ const media = {
 };
 const response = (value: unknown) =>
   Promise.resolve({ ok: true, json: () => Promise.resolve(value) } as Response);
+it("zooms video toward the cursor, pans, and keeps playback controls outside the viewport", () => {
+  render(<Player item={{ ...item, type: "video" }} />);
+  const video = document.querySelector("video")!;
+  const viewport = video.parentElement!;
+  Object.defineProperties(video, {
+    videoWidth: { value: 640 },
+    videoHeight: { value: 360 },
+    duration: { value: 30 },
+  });
+  Object.defineProperties(viewport, {
+    clientWidth: { value: 640 },
+    clientHeight: { value: 360 },
+  });
+  vi.spyOn(viewport, "getBoundingClientRect").mockReturnValue({
+    left: 0,
+    top: 0,
+    width: 640,
+    height: 360,
+  } as DOMRect);
+  fireEvent.wheel(viewport, { deltaY: -200, clientX: 400, clientY: 180 });
+  expect(video.style.transform).not.toContain("scale(1)");
+  expect(video.style.transform).not.toContain("translate(0px, 0px)");
+  expect(viewport.contains(screen.getByRole("button", { name: "Play" }))).toBe(
+    false,
+  );
+  fireEvent.loadedMetadata(video);
+  fireEvent.change(screen.getByRole("slider", { name: "Seek video" }), {
+    target: { value: "12" },
+  });
+  expect(video.currentTime).toBe(12);
+  const loopButton = screen.getByRole("button", { name: "Loop video" });
+  expect(video.loop).toBe(false);
+  fireEvent.click(loopButton);
+  expect(video.loop).toBe(true);
+  expect(loopButton.getAttribute("aria-pressed")).toBe("true");
+  fireEvent.click(loopButton);
+  expect(video.loop).toBe(false);
+  fireEvent.timeUpdate(video);
+  expect(screen.getByLabelText("Playback time").textContent).toBe(
+    "0:12 / 0:30",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Forward 10 seconds" }));
+  expect(video.currentTime).toBe(22);
+  fireEvent.click(screen.getByRole("button", { name: "Forward 10 seconds" }));
+  expect(video.currentTime).toBe(30);
+  fireEvent.keyDown(screen.getByLabelText("Video player"), { key: "j" });
+  expect(video.currentTime).toBe(20);
+  fireEvent.change(screen.getByRole("combobox", { name: "Playback speed" }), {
+    target: { value: "1.5" },
+  });
+  expect(video.playbackRate).toBe(1.5);
+  fireEvent.click(screen.getByRole("button", { name: "Mute" }));
+  expect(video.muted).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Reset zoom" }));
+  expect(video.style.transform).toBe("translate(0px, 0px) scale(1)");
+  fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+  expect(video.style.transform).toContain("scale(1.25)");
+  fireEvent.click(screen.getByRole("button", { name: "Zoom out" }));
+  expect(video.style.transform).toBe("translate(0px, 0px) scale(1)");
+});
 beforeEach(() => {
   history.replaceState(null, "", "/");
 });

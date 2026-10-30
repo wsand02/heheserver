@@ -57,7 +57,7 @@ export function Viewer({
       if (overlay && e.key === "Tab") {
         const nodes = Array.from(
           box.current?.querySelectorAll<HTMLElement>(
-            "a[href],button:not(:disabled),video,audio",
+            "a[href],button:not(:disabled),input:not(:disabled),video,audio",
           ) || [],
         );
         const first = nodes[0],
@@ -144,7 +144,9 @@ export function Viewer({
               !data ||
               event.touches.length !== 1 ||
               (window.visualViewport?.scale ?? 1) > 1 ||
-              (event.target as Element).closest("audio,a,button")
+              (event.target as Element).closest(
+                'audio,a,button,input,[data-zoomed="true"]',
+              )
             )
               return;
             const touch = event.touches[0];
