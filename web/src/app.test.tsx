@@ -250,6 +250,84 @@ describe("routing", () => {
   );
 });
 describe("viewer", () => {
+  it("allows video picture swipes while reserving native playback controls", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => response({ ...media, item: { ...item, type: "video" } })),
+    );
+    const navigate = vi.fn();
+    render(
+      <Viewer
+        url="/post/?path=x"
+        overlay
+        close={() => {}}
+        navigate={navigate}
+      />,
+    );
+    await screen.findByRole("heading", { name: "photo.png" });
+    const video = document.querySelector("video")!;
+    vi.spyOn(video, "getBoundingClientRect").mockReturnValue({
+      bottom: 500,
+    } as DOMRect);
+    const swipe = (y: number) => {
+      fireEvent.touchStart(video, {
+        touches: [{ identifier: 1, clientX: 200, clientY: y }],
+      });
+      fireEvent.touchEnd(video, {
+        touches: [],
+        changedTouches: [{ identifier: 1, clientX: 80, clientY: y }],
+      });
+    };
+    swipe(200);
+    expect(navigate).toHaveBeenCalledWith(media.next);
+    navigate.mockClear();
+    swipe(460);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+  it("navigates deliberate swipes but ignores scrolling, multitouch, cancellation, and boundaries", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => response(media)),
+    );
+    const navigate = vi.fn();
+    render(
+      <Viewer
+        url="/post/?path=x"
+        overlay
+        close={() => {}}
+        navigate={navigate}
+      />,
+    );
+    const image = await screen.findByRole("img");
+    const touch = (x: number, y = 100) => ({
+      identifier: 1,
+      clientX: x,
+      clientY: y,
+    });
+    const start = () => fireEvent.touchStart(image, { touches: [touch(200)] });
+    const end = (x: number, y = 100) =>
+      fireEvent.touchEnd(image, { touches: [], changedTouches: [touch(x, y)] });
+    start();
+    end(80);
+    expect(navigate).toHaveBeenCalledWith(media.next);
+    navigate.mockClear();
+    start();
+    end(320); // No previous item.
+    start();
+    end(180); // A tap or small movement.
+    start();
+    fireEvent.touchMove(image, { touches: [touch(150, 160)] });
+    end(80);
+    start();
+    fireEvent.touchMove(image, {
+      touches: [touch(150), { ...touch(160), identifier: 2 }],
+    });
+    end(80);
+    start();
+    fireEvent.touchCancel(image);
+    end(80);
+    expect(navigate).not.toHaveBeenCalled();
+  });
   it("closes only for overlay backdrop clicks", async () => {
     vi.stubGlobal(
       "fetch",
@@ -317,25 +395,36 @@ describe("viewer", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(close).toHaveBeenCalled();
   });
-  it("releases video sources on navigation and unmount", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() => response({ ...media, item: { ...item, type: "video" } })),
-    );
-    const view = render(
-      <Viewer
-        url="/post/?path=x"
-        overlay
-        close={() => {}}
-        navigate={() => {}}
-      />,
-    );
-    await screen.findByRole("heading", { name: "photo.png" });
-    const video = document.querySelector("video")!;
-    expect(video.getAttribute("src")).toBe(item.url);
-    view.unmount();
-    expect(video.pause).toHaveBeenCalled();
-    expect(video.hasAttribute("src")).toBe(false);
-    expect(video.load).toHaveBeenCalled();
-  });
+  it.each([
+    undefined,
+    "/vidthumb/?path=/clip.mp4",
+    "/vidthumb/?path=/clip.mp4&variant=sheet",
+  ])(
+    "uses video poster %s and releases sources on unmount",
+    async (thumbnail) => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() =>
+          response({ ...media, item: { ...item, type: "video", thumbnail } }),
+        ),
+      );
+      const view = render(
+        <Viewer
+          url="/post/?path=x"
+          overlay
+          close={() => {}}
+          navigate={() => {}}
+        />,
+      );
+      await screen.findByRole("heading", { name: "photo.png" });
+      const video = document.querySelector("video")!;
+      expect(video.getAttribute("src")).toBe(item.url);
+      expect(video.getAttribute("poster")).toBe(thumbnail ?? null);
+      expect(video.autoplay).toBe(false);
+      view.unmount();
+      expect(video.pause).toHaveBeenCalled();
+      expect(video.hasAttribute("src")).toBe(false);
+      expect(video.load).toHaveBeenCalled();
+    },
+  );
 });

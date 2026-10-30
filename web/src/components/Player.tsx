@@ -32,6 +32,7 @@ export function Player({ item }: { item: Item }) {
   if (item.type === "video")
     return (
       <video
+        poster={item.thumbnail}
         ref={(node) => {
           media.current = node;
         }}

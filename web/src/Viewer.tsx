@@ -17,7 +17,14 @@ export function Viewer({
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
   const box = useRef<HTMLDivElement>(null);
+  const swipe = useRef<{
+    x: number;
+    y: number;
+    id: number;
+    time: number;
+  } | null>(null);
   useEffect(() => {
+    swipe.current = null;
     const abort = new AbortController();
     setData(undefined);
     setError("");
@@ -129,7 +136,73 @@ export function Viewer({
             </button>
           </div>
         </header>
-        <div className="stage">
+        <div
+          className={`stage${data?.item.type === "image" ? " stage-image" : ""}`}
+          onTouchStart={(event) => {
+            swipe.current = null;
+            if (
+              !data ||
+              event.touches.length !== 1 ||
+              (window.visualViewport?.scale ?? 1) > 1 ||
+              (event.target as Element).closest("audio,a,button")
+            )
+              return;
+            const touch = event.touches[0];
+            const video = (event.target as Element).closest("video");
+            // Native controls live in browser shadow DOM, so reserve their
+            // bottom strip rather than treating the entire video as a control.
+            if (
+              video &&
+              (video.matches(":fullscreen") ||
+                touch.clientY >= video.getBoundingClientRect().bottom - 80)
+            )
+              return;
+            swipe.current = {
+              x: touch.clientX,
+              y: touch.clientY,
+              id: touch.identifier,
+              time: Date.now(),
+            };
+          }}
+          onTouchMove={(event) => {
+            const start = swipe.current;
+            if (!start) return;
+            const touch = event.touches[0];
+            if (
+              event.touches.length !== 1 ||
+              touch.identifier !== start.id ||
+              Math.abs(touch.clientY - start.y) > 30
+            )
+              swipe.current = null;
+          }}
+          onTouchCancel={() => {
+            swipe.current = null;
+          }}
+          onTouchEnd={(event) => {
+            const start = swipe.current;
+            swipe.current = null;
+            if (
+              !start ||
+              event.touches.length ||
+              Date.now() - start.time > 700 ||
+              (window.visualViewport?.scale ?? 1) > 1
+            )
+              return;
+            const touch = Array.from(event.changedTouches).find(
+              (t) => t.identifier === start.id,
+            );
+            if (!touch) return;
+            const dx = touch.clientX - start.x;
+            const dy = touch.clientY - start.y;
+            if (
+              Math.abs(dx) < 60 ||
+              Math.abs(dy) > 30 ||
+              Math.abs(dx) < Math.abs(dy) * 2
+            )
+              return;
+            nav(dx < 0 ? data?.next : data?.previous);
+          }}
+        >
           {error ? (
             <p role="alert">
               {error}{" "}
@@ -141,6 +214,11 @@ export function Viewer({
             <p role="status">Loading media…</p>
           )}
         </div>
+        {data && (data.previous || data.next) && (
+          <p className="viewer-hint">
+            Swipe left or right, or use the arrow keys to browse
+          </p>
+        )}
         {data && (
           <footer className="media-details">
             <div>
