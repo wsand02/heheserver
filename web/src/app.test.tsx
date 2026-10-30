@@ -126,8 +126,13 @@ describe("routing", () => {
     fireEvent.click(link, { ctrlKey: true });
     expect(screen.queryByRole("dialog")).toBeNull();
   });
-  it("resets pagination when applying filters", async () => {
-    history.replaceState(null, "", "/?path=%2F&p=2");
+  it("preserves the subdirectory and resets pagination when applying filters", async () => {
+    const path = "/albums/c++ & cats/";
+    history.replaceState(
+      null,
+      "",
+      "/?" + new URLSearchParams({ path, p: "2" }),
+    );
     const fetcher = vi.fn(() => response({ ...collection, page: 2 }));
     vi.stubGlobal("fetch", fetcher);
     render(<App />);
@@ -138,7 +143,43 @@ describe("routing", () => {
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
     await waitFor(() => expect(location.search).toContain("q=cat"));
     expect(new URLSearchParams(location.search).has("p")).toBe(false);
+    expect(new URLSearchParams(location.search).get("path")).toBe(path);
   });
+  it.each(["search", "type", "extension"])(
+    "keeps the current directory when a %s filter applies automatically",
+    async (filter) => {
+      const path = "/albums/c++ & cats/";
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => response(collection)),
+      );
+      render(<App />);
+      await screen.findByRole("link", { name: "photo.png" });
+      act(() => {
+        history.pushState(null, "", "/?" + new URLSearchParams({ path }));
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      });
+      await screen.findByRole("heading", { name: "c++ & cats" });
+      if (filter === "type") {
+        fireEvent.click(screen.getByLabelText("image"));
+      } else {
+        fireEvent.input(
+          screen.getByPlaceholderText(
+            filter === "search" ? "Find a filename" : ".png, .mp4",
+          ),
+          { target: { value: filter === "search" ? "cat" : ".png" } },
+        );
+      }
+      const key = { search: "q", type: "type", extension: "ext" }[filter]!;
+      await waitFor(() =>
+        expect(new URLSearchParams(location.search).has(key)).toBe(true),
+      );
+      expect(new URLSearchParams(location.search).get("path")).toBe(path);
+      fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+      expect(new URLSearchParams(location.search).get("path")).toBe(path);
+      expect(new URLSearchParams(location.search).has(key)).toBe(false);
+    },
+  );
 });
 describe("viewer", () => {
   it("closes only for overlay backdrop clicks", async () => {

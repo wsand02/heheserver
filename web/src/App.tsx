@@ -42,9 +42,9 @@ function Filters({
   useEffect(() => {
     const p = new URL(url, location.origin).searchParams;
     const node = form.current!;
-    for (const key of ["path", "q", "ext"]) {
+    for (const key of ["q", "ext"]) {
       (node.elements.namedItem(key) as HTMLInputElement).value =
-        p.get(key) || (key === "path" ? "/" : "");
+        p.get(key) || "";
     }
     node
       .querySelectorAll<HTMLInputElement>('[name="type"]')
@@ -70,7 +70,6 @@ function Filters({
         submit();
       }}
     >
-      <input type="hidden" name="path" defaultValue="/" />
       <label>
         Search
         <input name="q" placeholder="Find a filename" />
@@ -282,6 +281,10 @@ export function App() {
     );
     for (const [key, value] of [...params])
       if (!value.trim()) params.delete(key);
+    params.set(
+      "path",
+      new URL(galleryRoute, location.origin).searchParams.get("path") || "/",
+    );
     visit("/?" + params, true);
   }
   const params = new URL(galleryRoute, location.origin).searchParams;
