@@ -5,7 +5,9 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/wsand02/heheserver/internal/ignore"
 )
@@ -30,6 +32,22 @@ func Dir(root string) http.FileSystem {
 // If file matches a rule in heheignore we pretend it doesn't exist
 // and return fs.ErrNotExist.
 func (hfs HeheFS) Open(name string) (http.File, error) {
+	// Use the same canonical path for ignore checks and http.Dir.Open.
+	// Reject traversal before walking ignore files, including Windows escapes.
+	if strings.ContainsAny(name, "\\\x00") {
+		return nil, fs.ErrInvalid
+	}
+	for _, part := range strings.Split(name, "/") {
+		if part == ".." {
+			return nil, fs.ErrInvalid
+		}
+	}
+	name = path.Clean("/" + name)
+	if name != "/" {
+		if _, err := filepath.Localize(name[1:]); err != nil {
+			return nil, fs.ErrInvalid
+		}
+	}
 	rules := ignore.GetIgnoreForPath(hfs.Root, filepath.Join(hfs.Root, filepath.Dir(name)))
 	// Normalize path by removing leading slash for pattern matching
 	normPath := name

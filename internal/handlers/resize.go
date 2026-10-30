@@ -20,6 +20,12 @@ import (
 )
 
 func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, cfg *config.Config) {
+	var err error
+	ctx, err = apiPath(ctx)
+	if err != nil {
+		utils.HttpLogErr(w, r, err, "invalid path", http.StatusBadRequest)
+		return
+	}
 
 	cImg, ok := cache.GetResizeCache().Get(ctx)
 	w.Header().Add("Cache-Control", "private, max-age=86400")
@@ -70,7 +76,11 @@ func ResizeHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.H
 		var dst image.Image
 		var resizeErr error
 		if cfg.FFmpegExists {
-			fullName := filepath.Join(hfs.Root, ctx)
+			local, localErr := filepath.Localize(ctx[1:])
+			if localErr != nil {
+				return nil, localErr
+			}
+			fullName := filepath.Join(hfs.Root, local)
 			dst, resizeErr = resize.ResizeImage(fullName)
 		} else {
 			dst, resizeErr = resize.ResizeImageFallback(hf)
