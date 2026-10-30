@@ -29,6 +29,67 @@ func TestVideoSheetsFlag(t *testing.T) {
 	}
 }
 
+func TestPreviewFlagShorthands(t *testing.T) {
+	oldFlags, oldArgs := flag.CommandLine, os.Args
+	t.Cleanup(func() { flag.CommandLine, os.Args = oldFlags, oldArgs })
+	for _, tc := range []struct {
+		args    []string
+		sheets  bool
+		workers int
+	}{
+		{[]string{"-vs", "-tb", "1"}, true, 1},
+		{[]string{"-video-sheets", "-vs=false", "-thumb-workers=2", "-tb=3"}, false, 3},
+		{[]string{"-vs=false", "-video-sheets", "-tb=3", "-thumb-workers=2"}, true, 2},
+		{[]string{"-tb=0"}, false, 0},
+	} {
+		flag.CommandLine = flag.NewFlagSet("test", flag.ContinueOnError)
+		os.Args = append([]string{"heheserver"}, tc.args...)
+		os.Args = append(os.Args, t.TempDir())
+		cfg, err := ParseFromFlags()
+		if tc.workers == 0 {
+			if err == nil {
+				t.Fatal("expected invalid worker count error")
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		if cfg.VideoSheets != tc.sheets || cfg.ThumbWorkers != tc.workers {
+			t.Fatalf("%v: sheets=%v workers=%d", tc.args, cfg.VideoSheets, cfg.ThumbWorkers)
+		}
+	}
+}
+
+func TestThumbWorkersFlag(t *testing.T) {
+	oldFlags, oldArgs := flag.CommandLine, os.Args
+	t.Cleanup(func() { flag.CommandLine, os.Args = oldFlags, oldArgs })
+	for _, tc := range []struct {
+		arg  string
+		want int
+	}{{"", 4}, {"1", 1}, {"8", 8}, {"0", 0}, {"-1", 0}} {
+		flag.CommandLine = flag.NewFlagSet("test", flag.ContinueOnError)
+		os.Args = []string{"heheserver"}
+		if tc.arg != "" {
+			os.Args = append(os.Args, "-thumb-workers="+tc.arg)
+		}
+		os.Args = append(os.Args, t.TempDir())
+		cfg, err := ParseFromFlags()
+		if tc.want == 0 {
+			if err == nil {
+				t.Fatalf("%q: expected validation error", tc.arg)
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		if cfg.ThumbWorkers != tc.want {
+			t.Fatalf("%q: got %d want %d", tc.arg, cfg.ThumbWorkers, tc.want)
+		}
+	}
+}
+
 func TestNewConfigValid(t *testing.T) {
 	dir := t.TempDir()
 	cfg, err := NewConfig(3400, 64, true, false, false, dir, "0.0.0.0", 16, 1000, 1000)

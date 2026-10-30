@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/wsand02/heheserver/internal/thumbgen"
 	"github.com/wsand02/heheserver/internal/utils"
 )
 
@@ -36,6 +37,7 @@ type Config struct {
 	Gallery           bool
 	Resize            bool
 	VideoSheets       bool
+	ThumbWorkers      int
 	NoInfiniteScroll  bool
 	Directory         string
 	Split             int
@@ -61,6 +63,7 @@ func NewConfig(port, split int, gallery, resize, noInfiniteScroll bool, director
 		Directory:         directory,
 		Gallery:           gallery,
 		Resize:            resize,
+		ThumbWorkers:      thumbgen.DefaultMaxConcurrent,
 		NoInfiniteScroll:  noInfiniteScroll,
 		Split:             split,
 		FFmpegExists:      utils.FFmpegExists(),
@@ -98,18 +101,24 @@ func ParseFromFlags() (*Config, error) {
 	gallery := flag.Bool("gallery", defaultGalleryFlag, galleryDesc)
 	resize := flag.Bool("resize", defaultResizeFlag, resizeDesc)
 	videoSheets := flag.Bool("video-sheets", false, "Use 2x2 video contact sheets; requires -resize and ffmpeg.")
+	thumbWorkers := flag.Int("thumb-workers", thumbgen.DefaultMaxConcurrent, "Maximum concurrent image resize and video preview jobs (must be positive).")
 	noInfiniteScroll := flag.Bool("no-infinite-scroll", defaultNoInfiniteScroll, noInfiniteScrollDesc)
 	split := flag.Int("split", defaultSplit, splitDesc)
 	ignoreCacheSize := flag.Int64("igncache", defaultIgnoreCacheSize, ignoreCacheSizeDesc)
 	resizeCacheSize := flag.Int64("rescache", defaultResizeCacheSize, resizeCacheSizeDesc)
 	vidThumbCacheSize := flag.Int64("vidtcache", defaultVidThumbCacheSize, vidThumbCacheSizeDesc)
 	// Define short flags
+	flag.BoolVar(videoSheets, "vs", false, "Alias for -video-sheets.")
+	flag.IntVar(thumbWorkers, "tb", thumbgen.DefaultMaxConcurrent, "Alias for -thumb-workers.")
 	flag.IntVar(port, "p", defaultPort, portDesc)
 	flag.StringVar(host, "h", defaultHost, hostDesc)
 	flag.IntVar(split, "s", defaultSplit, splitDesc)
 	flag.BoolVar(gallery, "g", defaultGalleryFlag, galleryDesc)
 	flag.BoolVar(resize, "r", defaultResizeFlag, resizeDesc)
 	flag.Parse()
+	if *thumbWorkers < 1 {
+		return nil, fmt.Errorf("thumb-workers must be greater than 0")
+	}
 
 	dirToServe := flag.Arg(0)
 	if len(dirToServe) == 0 {
@@ -120,5 +129,6 @@ func ParseFromFlags() (*Config, error) {
 		return nil, err
 	}
 	cfg.VideoSheets = *videoSheets
+	cfg.ThumbWorkers = *thumbWorkers
 	return cfg, nil
 }

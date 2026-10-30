@@ -10,6 +10,7 @@ import (
 	"github.com/wsand02/heheserver/internal/frontend"
 	"github.com/wsand02/heheserver/internal/fs"
 	"github.com/wsand02/heheserver/internal/handlers"
+	"github.com/wsand02/heheserver/internal/thumbgen"
 )
 
 type Server struct {
@@ -79,6 +80,12 @@ func (s *Server) setupRoutes() {
 }
 
 func NewServer(cfg *config.Config) *Server {
+	workers := cfg.ThumbWorkers
+	// Keep zero-value Config literals compatible with the original default.
+	if workers == 0 {
+		workers = thumbgen.DefaultMaxConcurrent
+	}
+	thumbgen.Configure(workers)
 	mux := http.NewServeMux()
 	hfs := fs.Dir(cfg.Directory)
 	hfsa, ok := hfs.(*fs.HeheFS)

@@ -5,10 +5,10 @@ import (
 	"context"
 	"fmt"
 	"image"
-	"image/draw"
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -56,27 +56,34 @@ func generateSheet(ctx context.Context, path string) (image.Image, error) {
 	if duration <= 0 {
 		return nil, fmt.Errorf("video duration must be positive")
 	}
-	sheet := image.NewRGBA(image.Rect(0, 0, 640, 360))
+	args := []string{"-nostdin", "-v", "error"}
+	var filters []string
 	for i, fraction := range []float64{0.10, 0.35, 0.60, 0.85} {
 		target := duration * fraction
-		// Decode a short lead-in and extend the last frame so samples between
-		// the final frame timestamp and container duration still produce an image.
+		// Each input seeks near its sample; only the short lead-in is decoded.
+		// Extend the last frame for samples beyond the final frame timestamp.
 		seek := max(0, target-1)
-		cmd := exec.CommandContext(ctx, "ffmpeg", "-nostdin", "-v", "error", "-ss", strconv.FormatFloat(seek, 'f', 6, 64), "-i", path,
-			"-ss", strconv.FormatFloat(target-seek, 'f', 6, 64),
-			"-map", "0:v:0", "-frames:v", "1", "-vf", "scale=320:180:force_original_aspect_ratio=decrease,pad=320:180:(ow-iw)/2:(oh-ih)/2:black,setsar=1,tpad=stop_mode=clone:stop_duration=1",
-			"-f", "image2pipe", "-vcodec", "png", "-")
-		var frame bytes.Buffer
-		cmd.Stdout = &frame
-		if err := cmd.Run(); err != nil {
-			return nil, fmt.Errorf("extract sheet frame: %w", err)
-		}
-		img, _, err := image.Decode(&frame)
-		if err != nil {
-			return nil, fmt.Errorf("decode sheet frame: %w", err)
-		}
-		cell := image.Rect((i%2)*320, (i/2)*180, (i%2+1)*320, (i/2+1)*180)
-		draw.Draw(sheet, cell, img, img.Bounds().Min, draw.Src)
+		args = append(args, "-ss", strconv.FormatFloat(seek, 'f', 6, 64), "-i", path)
+		filters = append(filters, fmt.Sprintf(
+			"[%d:v:0]scale=320:180:force_original_aspect_ratio=decrease,pad=320:180:(ow-iw)/2:(oh-ih)/2:black,setsar=1,tpad=stop_mode=clone:stop_duration=1,trim=start=%.6f,trim=end_frame=1,setpts=PTS-STARTPTS[cell%d]",
+			i, target-seek, i))
 	}
+	filters = append(filters, "[cell0][cell1][cell2][cell3]xstack=inputs=4:layout=0_0|320_0|0_180|320_180[sheet]")
+	// Return one raw frame, avoiding four PNG encodes/decodes and Go-side
+	// composition. The handler performs the final JPEG encode as before.
+	args = append(args, "-filter_complex", strings.Join(filters, ";"), "-map", "[sheet]",
+		"-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgba", "-")
+	cmd = exec.CommandContext(ctx, "ffmpeg", args...)
+	var frame, stderr bytes.Buffer
+	cmd.Stdout = &frame
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("extract sheet: %w: %s", err, stderr.String())
+	}
+	sheet := image.NewRGBA(image.Rect(0, 0, 640, 360))
+	if frame.Len() != len(sheet.Pix) {
+		return nil, fmt.Errorf("unexpected sheet size: got %d bytes, want %d", frame.Len(), len(sheet.Pix))
+	}
+	copy(sheet.Pix, frame.Bytes())
 	return sheet, nil
 }

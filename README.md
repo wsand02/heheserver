@@ -75,9 +75,11 @@ heheserver [options] [path]
 
 `-vidtcache` Size of video thumbnail cache in megabytes, approximate. (default 1000)
 
-`-video-sheets` Use 2×2 contact sheets instead of single-frame video previews. Requires `-r` / `-resize` and ffmpeg; otherwise it has no effect. Disabled by default. Sheets sample 10%, 35%, 60%, and 85% of the video into a 640×360 JPEG and share the video thumbnail cache budget. Sheet generation has a 30-second limit and falls back to a single-frame thumbnail on failure.
+`-tb` or `-thumb-workers` Maximum concurrent generation jobs, shared by image resizing, video thumbnails, and video sheets. Must be positive; default 4. For a slow HDD, try `-thumb-workers 1` to serialize jobs. Cache hits bypass this limit, and identical in-flight requests share one job. This limits jobs, not FFmpeg threads or the four seeked inputs within a sheet. Configure it at startup; queued requests currently wait even if the client disconnects.
 
-For example: `heheserver -g -r -video-sheets ./media`
+`-vs` or `-video-sheets` Use 2×2 contact sheets instead of single-frame video previews. Requires `-r` / `-resize` and ffmpeg; otherwise it has no effect. Disabled by default. Sheets sample 10%, 35%, 60%, and 85% of the video into a 640×360 JPEG and share the video thumbnail cache budget. Sheet generation has a 30-second limit and falls back to a single-frame thumbnail on failure.
+
+For example: `heheserver -g -r -vs -tb 1 ./media`
 
 ## Startup output
 

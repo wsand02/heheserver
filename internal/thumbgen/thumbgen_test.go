@@ -2,6 +2,7 @@ package thumbgen
 
 import (
 	"bytes"
+	"errors"
 	"image"
 	"image/color"
 	"image/png"
@@ -145,4 +146,59 @@ func TestDoBoundsDistinctKeys(t *testing.T) {
 	close(release)
 	<-started
 	wg.Wait()
+}
+
+func TestConfigureSharedLimit(t *testing.T) {
+	Configure(1)
+	t.Cleanup(func() { Configure(DefaultMaxConcurrent) })
+	started := make(chan string, 2)
+	release := make(chan struct{})
+	var wg sync.WaitGroup
+	for _, key := range []string{"image:test", "video:test"} {
+		wg.Add(1)
+		go func(key string) {
+			defer wg.Done()
+			_, _ = Do(key, func() (any, error) {
+				started <- key
+				<-release
+				return nil, nil
+			})
+		}(key)
+	}
+	<-started
+	select {
+	case <-started:
+		t.Error("configured limit exceeded across image and video jobs")
+	case <-time.After(25 * time.Millisecond):
+	}
+	close(release)
+	wg.Wait()
+}
+
+func TestDoReleasesSlotAndKeyAfterFailure(t *testing.T) {
+	group := New(1)
+	for _, panicJob := range []bool{false, true} {
+		_, err := group.Do("same", func() (any, error) {
+			if panicJob {
+				panic("test panic")
+			}
+			return nil, errors.New("test failure")
+		})
+		if err == nil {
+			t.Fatal("expected failure")
+		}
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			value, err := group.Do("same", func() (any, error) { return "recovered", nil })
+			if err != nil || value != "recovered" {
+				t.Errorf("retry: value=%v err=%v", value, err)
+			}
+		}()
+		select {
+		case <-done:
+		case <-time.After(time.Second):
+			t.Fatal("failure leaked slot or in-flight key")
+		}
+	}
 }

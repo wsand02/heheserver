@@ -3,6 +3,7 @@ package thumbgen
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 )
 
 const DefaultMaxConcurrent = 4
@@ -29,10 +30,20 @@ func New(maxConcurrent int) *Group {
 	}
 }
 
-var shared = New(DefaultMaxConcurrent)
+var shared atomic.Pointer[Group]
+
+func init() {
+	shared.Store(New(DefaultMaxConcurrent))
+}
+
+// Configure sets the process-wide generation limit at server startup.
+// Existing calls retain their original group; do not use this for live resizing.
+func Configure(maxConcurrent int) {
+	shared.Store(New(maxConcurrent))
+}
 
 func Do(key string, fn func() (any, error)) (any, error) {
-	return shared.Do(key, fn)
+	return shared.Load().Do(key, fn)
 }
 
 func (g *Group) Do(key string, fn func() (any, error)) (value any, err error) {
