@@ -35,6 +35,7 @@ type Config struct {
 	Host              string
 	Gallery           bool
 	Resize            bool
+	VideoSheets       bool
 	NoInfiniteScroll  bool
 	Directory         string
 	Split             int
@@ -96,6 +97,7 @@ func ParseFromFlags() (*Config, error) {
 	host := flag.String("host", defaultHost, hostDesc)
 	gallery := flag.Bool("gallery", defaultGalleryFlag, galleryDesc)
 	resize := flag.Bool("resize", defaultResizeFlag, resizeDesc)
+	videoSheets := flag.Bool("video-sheets", false, "Use 2x2 video contact sheets; requires -resize and ffmpeg.")
 	noInfiniteScroll := flag.Bool("no-infinite-scroll", defaultNoInfiniteScroll, noInfiniteScrollDesc)
 	split := flag.Int("split", defaultSplit, splitDesc)
 	ignoreCacheSize := flag.Int64("igncache", defaultIgnoreCacheSize, ignoreCacheSizeDesc)
@@ -113,5 +115,10 @@ func ParseFromFlags() (*Config, error) {
 	if len(dirToServe) == 0 {
 		dirToServe = defaultDir
 	}
-	return NewConfig(*port, *split, *gallery, *resize, *noInfiniteScroll, dirToServe, *host, *ignoreCacheSize, *resizeCacheSize, *vidThumbCacheSize)
+	cfg, err := NewConfig(*port, *split, *gallery, *resize, *noInfiniteScroll, dirToServe, *host, *ignoreCacheSize, *resizeCacheSize, *vidThumbCacheSize)
+	if err != nil {
+		return nil, err
+	}
+	cfg.VideoSheets = *videoSheets
+	return cfg, nil
 }

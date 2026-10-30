@@ -85,6 +85,49 @@ func TestVidThumbHandler(t *testing.T) {
 	}
 }
 
+func TestVidThumbSheetCacheSeparation(t *testing.T) {
+	if !utils.FFmpegExists() {
+		t.Skip("ffmpeg not on PATH")
+	}
+	if err := cache.NewVidThumbCache(8); err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	makeTestVideo(t, filepath.Join(dir, "clip.mp4"))
+	hfs := testHFS(t, dir)
+	cfg := &config.Config{Resize: true, FFmpegExists: true, VideoSheets: true}
+	for _, tc := range []struct {
+		query, key string
+		bounds     image.Rectangle
+	}{
+		{"", "/clip.mp4", image.Rect(0, 0, 64, 64)},
+		{"&variant=sheet", "sheet:/clip.mp4", image.Rect(0, 0, 640, 360)},
+	} {
+		var first []byte
+		for request := 0; request < 2; request++ {
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest("GET", "/vidthumb/?path=/clip.mp4"+tc.query, nil)
+			VidThumbHandler(w, r, "/clip.mp4", hfs, cfg)
+			img, err := jpeg.Decode(bytes.NewReader(w.Body.Bytes()))
+			if w.Code != 200 || err != nil {
+				t.Fatalf("status=%d decode=%v", w.Code, err)
+			}
+			if img.Bounds() != tc.bounds {
+				t.Fatalf("%s: got %v want %v", tc.query, img.Bounds(), tc.bounds)
+			}
+			if request == 0 {
+				first = append([]byte(nil), w.Body.Bytes()...)
+			} else if !bytes.Equal(first, w.Body.Bytes()) {
+				t.Fatal("cached response differs")
+			}
+			cache.GetVidThumbCache().Wait()
+			if cached, ok := cache.GetVidThumbCache().Get(tc.key); !ok || !bytes.Equal(cached.JPEG, first) {
+				t.Fatalf("missing variant cache entry: %s", tc.key)
+			}
+		}
+	}
+}
+
 func TestVidThumbHandlerNotAVideo(t *testing.T) {
 	if !utils.FFmpegExists() {
 		t.Skip("ffmpeg not on PATH")

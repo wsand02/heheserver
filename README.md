@@ -75,6 +75,10 @@ heheserver [options] [path]
 
 `-vidtcache` Size of video thumbnail cache in megabytes, approximate. (default 1000)
 
+`-video-sheets` Use 2×2 contact sheets instead of single-frame video previews. Requires `-r` / `-resize` and ffmpeg; otherwise it has no effect. Disabled by default. Sheets sample 10%, 35%, 60%, and 85% of the video into a 640×360 JPEG and share the video thumbnail cache budget. Sheet generation has a 30-second limit and falls back to a single-frame thumbnail on failure.
+
+For example: `heheserver -g -r -video-sheets ./media`
+
 ## Startup output
 
 On launch heheserver prints its version and the URLs it's reachable at — a `localhost` link

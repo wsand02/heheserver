@@ -157,6 +157,9 @@ func serializeItem(it models.GalleryItem, cfg *config.Config, r *http.Request, p
 		}
 	} else if it.IsVideo() && cfg.Resize && cfg.FFmpegExists {
 		out.Thumbnail = it.GetVidThumb()
+		if cfg.VideoSheets {
+			out.Thumbnail += "&variant=sheet"
+		}
 	}
 	return out
 }

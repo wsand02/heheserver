@@ -24,9 +24,14 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 		return
 	}
 	defer hf.Close()
+	sheet := config.Resize && config.FFmpegExists && config.VideoSheets && r.URL.Query().Get("variant") == "sheet"
+	cacheKey := ctx
+	if sheet {
+		cacheKey = "sheet:" + ctx
+	}
 
 	w.Header().Add("Cache-Control", "private, max-age=86400")
-	vtb, ok := cache.GetVidThumbCache().Get(ctx)
+	vtb, ok := cache.GetVidThumbCache().Get(cacheKey)
 	if ok {
 		writeVideoThumbnail(w, r, vtb.JPEG)
 		return
@@ -53,11 +58,11 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 		dir = "."
 	}
 	fullName := filepath.Join(dir, path)
-	generated, err := thumbgen.Do("video:"+ctx, func() (any, error) {
-		if cached, ok := cache.GetVidThumbCache().Get(ctx); ok {
+	generated, err := thumbgen.Do("video:"+cacheKey, func() (any, error) {
+		if cached, ok := cache.GetVidThumbCache().Get(cacheKey); ok {
 			return cached, nil
 		}
-		img, generateErr := vidthumb.GenerateThumb(fullName)
+		img, generateErr := vidthumb.GeneratePreview(fullName, sheet)
 		if generateErr != nil {
 			return nil, generateErr
 		}
@@ -66,7 +71,7 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 			return nil, encodeErr
 		}
 		item := cache.VidThumbCacheItem{Image: img, JPEG: encoded.Bytes()}
-		cache.GetVidThumbCache().Set(ctx, item, utils.GetCost(img)+int64(len(item.JPEG)))
+		cache.GetVidThumbCache().Set(cacheKey, item, utils.GetCost(img)+int64(len(item.JPEG)))
 		return item, nil
 	})
 	if err != nil {
@@ -78,6 +83,7 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 }
 
 func writeVideoThumbnail(w http.ResponseWriter, r *http.Request, jpegBytes []byte) {
+	w.Header().Set("Content-Type", "image/jpeg")
 	if _, err := w.Write(jpegBytes); err != nil {
 		utils.HttpLogWriteErr(r, err, "write thumbnail", http.StatusInternalServerError)
 	}

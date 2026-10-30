@@ -1,11 +1,33 @@
 package config
 
 import (
+	"flag"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func TestVideoSheetsFlag(t *testing.T) {
+	oldFlags, oldArgs := flag.CommandLine, os.Args
+	t.Cleanup(func() { flag.CommandLine, os.Args = oldFlags, oldArgs })
+	for _, enabled := range []bool{false, true} {
+		flag.CommandLine = flag.NewFlagSet("test", flag.ContinueOnError)
+		os.Args = []string{"heheserver"}
+		if enabled {
+			os.Args = append(os.Args, "-r", "-video-sheets")
+		}
+		os.Args = append(os.Args, t.TempDir())
+		cfg, err := ParseFromFlags()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if cfg.VideoSheets != enabled || cfg.Resize != enabled {
+			t.Fatalf("enabled=%v: %+v", enabled, cfg)
+		}
+	}
+}
 
 func TestNewConfigValid(t *testing.T) {
 	dir := t.TempDir()

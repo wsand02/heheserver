@@ -43,6 +43,9 @@ func TestDirectoryPreviews(t *testing.T) {
 		{"ffmpeg without resize", config.Config{FFmpegExists: true}, []string{"/fs/album/B.png", "/fs/album/b2.png", "/fs/album/c%20%23+.png", "/fs/album/d.gif"}},
 		{"resize without ffmpeg", config.Config{Resize: true}, []string{"/resize/?path=/album/B.png", "/resize/?path=/album/b2.png", "/resize/?path=/album/c+%23%2B.png", "/fs/album/d.gif"}},
 		{"video", config.Config{Resize: true, FFmpegExists: true}, []string{"/vidthumb/?path=/album/a.mp4", "/resize/?path=/album/B.png", "/resize/?path=/album/b2.png", "/resize/?path=/album/c+%23%2B.png"}},
+		{"sheets", config.Config{Resize: true, FFmpegExists: true, VideoSheets: true}, []string{"/vidthumb/?path=/album/a.mp4&variant=sheet", "/resize/?path=/album/B.png", "/resize/?path=/album/b2.png", "/resize/?path=/album/c+%23%2B.png"}},
+		{"sheets without resize", config.Config{FFmpegExists: true, VideoSheets: true}, []string{"/fs/album/B.png", "/fs/album/b2.png", "/fs/album/c%20%23+.png", "/fs/album/d.gif"}},
+		{"sheets without ffmpeg", config.Config{Resize: true, VideoSheets: true}, []string{"/resize/?path=/album/B.png", "/resize/?path=/album/b2.png", "/resize/?path=/album/c+%23%2B.png", "/fs/album/d.gif"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := directoryPreviews(hfs, "/album", &tc.cfg); !reflect.DeepEqual(got, tc.want) {
