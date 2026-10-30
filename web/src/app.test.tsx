@@ -206,7 +206,9 @@ describe("routing", () => {
     fireEvent.change(screen.getByPlaceholderText("Find a filename"), {
       target: { value: "cat" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    fireEvent.submit(
+      screen.getByPlaceholderText("Find a filename").closest("form")!,
+    );
     await waitFor(() => expect(location.search).toContain("q=cat"));
     expect(new URLSearchParams(location.search).has("p")).toBe(false);
     expect(new URLSearchParams(location.search).get("path")).toBe(path);
