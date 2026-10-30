@@ -10,6 +10,7 @@ export type Item = {
   height: number;
   url: string;
   thumbnail?: string;
+  previews?: string[];
   viewerUrl: string;
 };
 export type Gallery = {

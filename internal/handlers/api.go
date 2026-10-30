@@ -32,6 +32,7 @@ type mediaItem struct {
 	Height    int       `json:"height"`
 	URL       string    `json:"url"`
 	Thumbnail string    `json:"thumbnail,omitempty"`
+	Previews  []string  `json:"previews,omitempty"`
 	ViewerURL string    `json:"viewerUrl"`
 }
 type galleryResponse struct {
@@ -159,6 +160,30 @@ func serializeItem(it models.GalleryItem, cfg *config.Config, r *http.Request, p
 	}
 	return out
 }
+
+// Directory covers use an unfiltered, non-recursive listing. Only directories
+// on the current page are inspected; media generation stays lazy in the browser.
+func directoryPreviews(hfs *fs.HeheFS, dir string, cfg *config.Config) []string {
+	r := &http.Request{URL: &url.URL{}}
+	children, err := listing(hfs, dir, r)
+	if err != nil {
+		return nil
+	}
+	var previews []string
+	for _, child := range children {
+		if child.IsDir {
+			continue
+		}
+		if thumbnail := serializeItem(child, cfg, r, 1).Thumbnail; thumbnail != "" {
+			previews = append(previews, thumbnail)
+			if len(previews) == 4 {
+				break
+			}
+		}
+	}
+	return previews
+}
+
 func GalleryAPI(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, cfg *config.Config) {
 	dir, e := apiPath(ctx)
 	if e != nil {
@@ -189,7 +214,11 @@ func GalleryAPI(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.Hehe
 	probeImageDimensions(hfs, batch)
 	out := galleryResponse{Items: []mediaItem{}, Path: strings.TrimSuffix(dir, "/") + "/", Page: page, Pages: pages, Total: len(items), Infinite: !cfg.NoInfiniteScroll, Version: version.GetVersion()}
 	for _, it := range batch {
-		out.Items = append(out.Items, serializeItem(it, cfg, r, page))
+		item := serializeItem(it, cfg, r, page)
+		if it.IsDir {
+			item.Previews = directoryPreviews(hfs, it.Path+it.Filename, cfg)
+		}
+		out.Items = append(out.Items, item)
 	}
 	jsonReply(w, 200, out)
 }

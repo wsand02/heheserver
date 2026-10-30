@@ -10,12 +10,116 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/wsand02/heheserver/internal/cache"
 	"github.com/wsand02/heheserver/internal/config"
 	"github.com/wsand02/heheserver/internal/fs"
 )
+
+func TestDirectoryPreviews(t *testing.T) {
+	root := t.TempDir()
+	for _, dir := range []string{"album", "album/nested", "empty"} {
+		if err := os.MkdirAll(filepath.Join(root, dir), 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, name := range []string{"a.mp4", "B.png", "b2.png", "c #+.png", "d.gif", "e.png", "secret.png", "note.txt", "song.mp3", "nested/inside.png"} {
+		if err := os.WriteFile(filepath.Join(root, "album", name), []byte("data"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(root, "album", ".heheignore"), []byte("secret.png\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	hfs := testHFS(t, root)
+	for _, tc := range []struct {
+		name string
+		cfg  config.Config
+		want []string
+	}{
+		{"originals", config.Config{}, []string{"/fs/album/B.png", "/fs/album/b2.png", "/fs/album/c%20%23+.png", "/fs/album/d.gif"}},
+		{"ffmpeg without resize", config.Config{FFmpegExists: true}, []string{"/fs/album/B.png", "/fs/album/b2.png", "/fs/album/c%20%23+.png", "/fs/album/d.gif"}},
+		{"resize without ffmpeg", config.Config{Resize: true}, []string{"/resize/?path=/album/B.png", "/resize/?path=/album/b2.png", "/resize/?path=/album/c+%23%2B.png", "/fs/album/d.gif"}},
+		{"video", config.Config{Resize: true, FFmpegExists: true}, []string{"/vidthumb/?path=/album/a.mp4", "/resize/?path=/album/B.png", "/resize/?path=/album/b2.png", "/resize/?path=/album/c+%23%2B.png"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := directoryPreviews(hfs, "/album", &tc.cfg); !reflect.DeepEqual(got, tc.want) {
+				t.Fatalf("got %v, want %v", got, tc.want)
+			}
+		})
+	}
+	for _, dir := range []string{"/empty", "/missing", "/album/note.txt"} {
+		if got := directoryPreviews(hfs, dir, &config.Config{}); len(got) != 0 {
+			t.Fatalf("%s: %v", dir, got)
+		}
+	}
+	// Remove the first four covers so ignored files and nested media cannot
+	// accidentally pass merely because they sort past the preview limit.
+	for _, name := range []string{"B.png", "b2.png", "c #+.png", "d.gif", "e.png"} {
+		if err := os.Remove(filepath.Join(root, "album", name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := directoryPreviews(hfs, "/album", &config.Config{}); len(got) != 0 {
+		t.Fatalf("ineligible children selected: %v", got)
+	}
+}
+
+type trackedPreviewFS struct {
+	http.FileSystem
+	opened []string
+	denied string
+}
+
+func (f *trackedPreviewFS) Open(name string) (http.File, error) {
+	f.opened = append(f.opened, name)
+	if name == f.denied {
+		return nil, os.ErrPermission
+	}
+	return f.FileSystem.Open(name)
+}
+
+func TestGalleryDirectoryPreviewsPageAndFilters(t *testing.T) {
+	root := t.TempDir()
+	for _, dir := range []string{"album.txt", "z-other"} {
+		if err := os.Mkdir(filepath.Join(root, dir), 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(root, dir, "cover.png"), []byte("data"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	hfs := testHFS(t, root)
+	tracked := &trackedPreviewFS{FileSystem: hfs.FileSystem}
+	hfs.FileSystem = tracked
+	w := httptest.NewRecorder()
+	GalleryAPI(w, httptest.NewRequest("GET", "/api/gallery?type=dir&q=album&ext=txt", nil), "/", hfs, &config.Config{Split: 1})
+	var out galleryResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
+		t.Fatal(err)
+	}
+	if w.Code != 200 || len(out.Items) != 1 || !reflect.DeepEqual(out.Items[0].Previews, []string{"/fs/album.txt/cover.png"}) {
+		t.Fatalf("filtered gallery: %d %s", w.Code, w.Body.String())
+	}
+	tracked.opened = nil
+	w = httptest.NewRecorder()
+	GalleryAPI(w, httptest.NewRequest("GET", "/api/gallery?p=2", nil), "/", hfs, &config.Config{Split: 1})
+	if w.Code != 200 || !reflect.DeepEqual(tracked.opened, []string{"/", "/z-other"}) {
+		t.Fatalf("page opens: %v; response: %s", tracked.opened, w.Body.String())
+	}
+	tracked.denied = "/z-other"
+	out = galleryResponse{}
+	w = httptest.NewRecorder()
+	GalleryAPI(w, httptest.NewRequest("GET", "/api/gallery?p=2", nil), "/", hfs, &config.Config{Split: 1})
+	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
+		t.Fatal(err)
+	}
+	if w.Code != 200 || len(out.Items) != 1 || len(out.Items[0].Previews) != 0 {
+		t.Fatalf("unreadable directory failed gallery: %d %s", w.Code, w.Body.String())
+	}
+}
 
 func TestAnimatedGIFGalleryAndViewer(t *testing.T) {
 	dir := t.TempDir()

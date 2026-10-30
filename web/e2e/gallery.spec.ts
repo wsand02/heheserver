@@ -1,4 +1,77 @@
 import { test, expect } from "@playwright/test";
+
+for (const theme of ["light", "dark"]) {
+  test(`directory collages in ${theme} theme`, async ({ page }, testInfo) => {
+    await page.route("**/api/gallery?*", (route) =>
+      route.fulfill({
+        json: {
+          items: Array.from({ length: 5 }, (_, count) => ({
+            name: `Folder ${count}`,
+            path: `/folder${count}`,
+            type: "dir",
+            url: `/?path=%2Ffolder${count}%2F`,
+            viewerUrl: "",
+            size: 0,
+            modified: "2026-01-01",
+            width: 0,
+            height: 0,
+            previews: Array.from({ length: count }, (_, i) => `/fs/${i}.svg`),
+          })),
+          path: "/",
+          page: 1,
+          pages: 1,
+          total: 5,
+          infinite: false,
+          version: "test",
+        },
+      }),
+    );
+    await page.goto("/?path=%2F");
+    await page.getByRole("combobox", { name: "Theme" }).selectOption(theme);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    for (let count = 1; count <= 4; count++) {
+      const link = page.getByRole("link", {
+        name: `Open Folder ${count}`,
+        exact: true,
+      });
+      await link.scrollIntoViewIfNeeded();
+      await expect(link.locator("img")).toHaveCount(count);
+      await expect(link.locator(".folder-badge")).toBeVisible();
+      const cells = await link.locator(".directory-cell").evaluateAll((cells) =>
+        cells.map((cell) => {
+          const r = cell.getBoundingClientRect();
+          return { x: r.x, y: r.y, w: r.width, h: r.height };
+        }),
+      );
+      const box = (await link.boundingBox())!;
+      expect(Math.abs(box.width / box.height - 4 / 3)).toBeLessThan(0.02);
+      expect(cells.every((cell) => cell.w > 0 && cell.h > 0)).toBe(true);
+      if (count === 2) {
+        expect(cells[0].y).toBe(cells[1].y);
+        expect(cells[1].x).toBeGreaterThan(cells[0].x);
+      }
+      if (count === 3) {
+        expect(cells[0].h).toBeGreaterThan(cells[1].h * 1.9);
+        expect(cells[1].x).toBe(cells[2].x);
+      }
+      if (count === 4) {
+        expect(cells[0].y).toBe(cells[1].y);
+        expect(cells[2].y).toBeGreaterThan(cells[0].y);
+      }
+    }
+    await page.evaluate(() => scrollTo(0, 0));
+    await page.screenshot({
+      path: testInfo.outputPath(`collages-${theme}.png`),
+      fullPage: true,
+    });
+    await page
+      .getByRole("link", { name: "Open Folder 4", exact: true })
+      .click();
+    await expect(page).toHaveURL(/path=%2Ffolder4%2F/);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+}
+
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/gallery?*", async (route) => {
     const p = new URL(route.request().url()).searchParams;

@@ -18,6 +18,7 @@ authentication or other security features required for safe exposure to the publ
 - Optional embedded gallery for images, video, and audio, with thumbnails and a single-item post view
 - Filter the gallery by file type, filename, or extension — updates in realtime, with shareable filter URLs
 - Thumbnail-only video tiles in the gallery — playback happens in the post view, so long browsing sessions stay light
+- Directory tiles preview up to four images or supported video thumbnails from directly inside each folder
 - Infinite scroll for large directories, with an option to force pagination
 - Optional on-the-fly image resizing (pure-Go fallback, accelerated by ffmpeg when present)
 - Video thumbnails when ffmpeg is available

@@ -48,6 +48,72 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
+describe("directory previews", () => {
+  const directory = {
+    ...item,
+    name: "album",
+    path: "/album",
+    type: "dir",
+    url: "/?path=%2Falbum%2F",
+  };
+  it.each([1, 2, 3, 4])(
+    "renders a %i-image collage and opens the folder",
+    async (count) => {
+      const previews = Array.from({ length: count }, (_, i) => `/fs/${i}.png`);
+      const fetcher = vi.fn(() =>
+        response({ ...collection, items: [{ ...directory, previews }] }),
+      );
+      vi.stubGlobal("fetch", fetcher);
+      render(<App />);
+      const link = await screen.findByRole("link", { name: "Open album" });
+      expect(link.querySelector(`.directory-collage-${count}`)).not.toBeNull();
+      const images = link.querySelectorAll("img");
+      expect(images).toHaveLength(count);
+      images.forEach((image, i) => {
+        expect(image.getAttribute("src")).toBe(previews[i]);
+        expect(image.getAttribute("loading")).toBe("lazy");
+      });
+      expect(link.textContent).toContain("Folder");
+      fireEvent.click(images[0]);
+      await waitFor(() =>
+        expect(fetcher).toHaveBeenLastCalledWith(
+          "/api/gallery?path=%2Falbum%2F",
+          { signal: expect.any(AbortSignal) },
+        ),
+      );
+      expect(screen.queryByRole("dialog")).toBeNull();
+    },
+  );
+  it("replaces only failed cells with a folder placeholder", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        response({
+          ...collection,
+          items: [{ ...directory, previews: ["/a.png", "/b.png"] }],
+        }),
+      ),
+    );
+    render(<App />);
+    const link = await screen.findByRole("link", { name: "Open album" });
+    fireEvent.error(link.querySelector("img")!);
+    expect(link.querySelectorAll("img")).toHaveLength(1);
+    expect(
+      link.querySelector(".directory-cell .placeholder")?.textContent,
+    ).toBe("▰");
+    expect(link.textContent).toContain("Folder");
+  });
+  it("keeps the folder icon when no preview is available", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => response({ ...collection, items: [directory] })),
+    );
+    render(<App />);
+    const link = await screen.findByRole("link", { name: "Open album" });
+    expect(link.querySelector("img")).toBeNull();
+    expect(link.querySelector(".placeholder")?.textContent).toBe("▰");
+  });
+});
 describe("routing", () => {
   it("ignores queued callbacks from an old infinite-scroll observer", async () => {
     const callbacks: Array<() => void> = [];

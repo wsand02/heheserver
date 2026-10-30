@@ -9,8 +9,36 @@ import {
 } from "./api";
 import { Viewer } from "./Viewer";
 
+function DirectoryCell({ src }: { src: string }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <span className="directory-cell">
+      {failed ? (
+        <span className="placeholder">▰</span>
+      ) : (
+        <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} />
+      )}
+    </span>
+  );
+}
+
 function Preview({ item }: { item: Item }) {
   const [failed, setFailed] = useState(false);
+  if (item.type === "dir" && item.previews?.length) {
+    const previews = item.previews.slice(0, 4);
+    return (
+      <>
+        <span
+          className={`directory-collage directory-collage-${previews.length}`}
+        >
+          {previews.map((src) => (
+            <DirectoryCell key={src} src={src} />
+          ))}
+        </span>
+        <span className="folder-badge">▰ Folder</span>
+      </>
+    );
+  }
   return item.thumbnail && !failed ? (
     <img
       src={item.thumbnail}
