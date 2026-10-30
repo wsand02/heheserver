@@ -113,9 +113,13 @@ entire directory before pagination. Results use deterministic filename ordering.
 
 Click an image, video, or audio tile to open the viewer. Previous/next controls and keyboard
 arrows move through matching media in the same directory, including items on other pages.
+On touchscreens, swipe left or right across a preview to browse. Vertical scrolling and
+pinch zoom remain available; swipes on video and audio controls do not change items.
 Escape, Close, or browser Back returns to the gallery without losing loaded tiles or scroll
 position. Direct `/post/?path=...` links open a standalone viewer. Playback never starts
 automatically, and leaving an item releases its media resources.
+Video previews use the generated thumbnail (or contact sheet with `-vs`) as their
+poster before playback, including in the detail viewer.
 
 Directories load more items as you scroll. Use `-no-infinite-scroll` for explicit pagination;
 `-s` controls page size. Theme selection supports system, light, and dark appearances.
