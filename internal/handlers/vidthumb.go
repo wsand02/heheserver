@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image/jpeg"
 	"net/http"
-	"path"
 	"path/filepath"
 
 	"github.com/h2non/filetype"
@@ -18,6 +17,12 @@ import (
 )
 
 func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs.HeheFS, config *config.Config) {
+	var err error
+	ctx, err = apiPath(ctx)
+	if err != nil {
+		utils.HttpLogErr(w, r, err, "invalid path", http.StatusBadRequest)
+		return
+	}
 	hf, err := hfs.Open(ctx)
 	if err != nil {
 		utils.HttpLogErr(w, r, err, "open file", utils.StatusForErr(err))
@@ -43,8 +48,7 @@ func VidThumbHandler(w http.ResponseWriter, r *http.Request, ctx string, hfs *fs
 		return
 	}
 
-	// taken from fs.Open()
-	path := path.Clean("/" + ctx)[1:]
+	path := ctx[1:]
 	if path == "" {
 		path = "."
 	}

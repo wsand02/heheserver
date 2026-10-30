@@ -1,12 +1,100 @@
 package fs
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/wsand02/heheserver/internal/cache"
 )
+
+func TestNestedIgnoreScope(t *testing.T) {
+	root := t.TempDir()
+	if err := cache.NewIgnoreCache(1); err != nil {
+		t.Fatal(err)
+	}
+	for name, content := range map[string]string{
+		"photos/.heheignore": "/secret.txt\n/private/*.txt\n*.tmp\n!/keep.tmp\n!\\#keep.tmp\n",
+		"photos/secret.txt":  "secret", "photos/private/data.txt": "secret",
+		"photos/deep/secret.txt": "public", "photos/deep/private/data.txt": "public",
+		"photos/hidden.tmp": "secret", "photos/keep.tmp": "public",
+		"photos/#keep.tmp": "public",
+		"other/secret.txt": "public", "other/private/data.txt": "public",
+	} {
+		full := filepath.Join(root, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(full), 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(content), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	hfs := Dir(root)
+	for name, hidden := range map[string]bool{"photos/secret.txt": true, "photos/private/data.txt": true, "photos/hidden.tmp": true, "photos/keep.tmp": false, "photos/#keep.tmp": false, "photos/deep/secret.txt": false, "photos/deep/private/data.txt": false, "other/secret.txt": false, "other/private/data.txt": false} {
+		t.Run(name, func(t *testing.T) {
+			f, err := hfs.Open("/" + name)
+			if f != nil {
+				f.Close()
+			}
+			if hidden && !errors.Is(err, fs.ErrNotExist) {
+				t.Errorf("hidden file open: %v", err)
+			}
+			if !hidden && err != nil {
+				t.Errorf("public file open: %v", err)
+			}
+			dir, err := hfs.Open("/" + filepath.ToSlash(filepath.Dir(name)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer dir.Close()
+			entries, err := dir.Readdir(-1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			found := false
+			for _, entry := range entries {
+				if entry.Name() == filepath.Base(name) {
+					found = true
+				}
+			}
+			if found == hidden {
+				t.Errorf("listed=%v, hidden=%v", found, hidden)
+			}
+		})
+	}
+}
+
+func TestOpenPathValidation(t *testing.T) {
+	root := t.TempDir()
+	if err := cache.NewIgnoreCache(1); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".heheignore"), []byte("/secret.txt\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "secret.txt"), []byte("hidden"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	hfs := Dir(root)
+	for _, raw := range []string{"/./secret.txt", "//secret.txt"} {
+		if f, err := hfs.Open(raw); !errors.Is(err, fs.ErrNotExist) {
+			if f != nil {
+				f.Close()
+			}
+			t.Errorf("%q bypassed ignore rule: %v", raw, err)
+		}
+	}
+	for _, raw := range []string{"/../secret.txt", "/sub/../../secret.txt", `/sub\secret.txt`, "/bad\x00.txt"} {
+		if f, err := hfs.Open(raw); !errors.Is(err, fs.ErrInvalid) {
+			if f != nil {
+				f.Close()
+			}
+			t.Errorf("%q: got %v, want invalid path", raw, err)
+		}
+	}
+}
 
 func TestOpenIgnoreFile(t *testing.T) {
 	dir := t.TempDir()
