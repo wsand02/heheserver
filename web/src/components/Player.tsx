@@ -1,6 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { Item } from "../api";
 
+type FullscreenVideo = HTMLVideoElement & {
+  webkitEnterFullscreen?: () => void;
+  webkitExitFullscreen?: () => void;
+  webkitDisplayingFullscreen?: boolean;
+};
+
 function formatTime(seconds: number) {
   const total = Math.max(0, Math.floor(seconds || 0));
   const hours = Math.floor(total / 3600);
@@ -40,7 +46,8 @@ function ControlIcon({
 
 function ZoomPreview({ item }: { item: Item }) {
   const image = useRef<HTMLImageElement | HTMLVideoElement>(null);
-  const video = useRef<HTMLVideoElement>(null);
+  const video = useRef<FullscreenVideo>(null);
+  const nativeFullscreen = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [time, setTime] = useState(0);
@@ -63,13 +70,58 @@ function ZoomPreview({ item }: { item: Item }) {
       );
   };
   useEffect(() => {
+    const node = video.current;
     const changed = () =>
       setFullscreen(
-        document.fullscreenElement === viewport.current?.parentElement,
+        document.fullscreenElement === viewport.current?.parentElement ||
+          nativeFullscreen.current ||
+          !!node?.webkitDisplayingFullscreen,
       );
+    const began = () => {
+      nativeFullscreen.current = true;
+      changed();
+    };
+    const ended = () => {
+      nativeFullscreen.current = false;
+      changed();
+    };
     document.addEventListener("fullscreenchange", changed);
-    return () => document.removeEventListener("fullscreenchange", changed);
+    node?.addEventListener("webkitbeginfullscreen", began);
+    node?.addEventListener("webkitendfullscreen", ended);
+    return () => {
+      document.removeEventListener("fullscreenchange", changed);
+      node?.removeEventListener("webkitbeginfullscreen", began);
+      node?.removeEventListener("webkitendfullscreen", ended);
+    };
   }, []);
+  const toggleFullscreen = () => {
+    const node = video.current;
+    const container = viewport.current?.parentElement;
+    const enterNative = () => {
+      try {
+        node?.webkitEnterFullscreen?.();
+      } catch {
+        // Native fullscreen can also be unavailable or reject the gesture.
+      }
+    };
+    try {
+      if (nativeFullscreen.current || node?.webkitDisplayingFullscreen) {
+        node?.webkitExitFullscreen?.();
+      } else if (document.fullscreenElement) {
+        void document.exitFullscreen().catch(() => {});
+      } else if (document.fullscreenEnabled && container?.requestFullscreen) {
+        try {
+          void container.requestFullscreen().catch(enterNative);
+        } catch {
+          enterNative();
+        }
+      } else {
+        enterNative();
+      }
+    } catch {
+      // A failed fullscreen transition must not interrupt playback.
+    }
+  };
   const isVideo = item.type === "video";
   const ready = () => {
     const node = image.current;
@@ -433,14 +485,7 @@ function ZoomPreview({ item }: { item: Item }) {
             <button
               aria-label={fullscreen ? "Exit fullscreen" : "Fullscreen"}
               title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
-              onClick={() => {
-                if (document.fullscreenElement)
-                  void document.exitFullscreen().catch(() => {});
-                else
-                  void viewport.current?.parentElement
-                    ?.requestFullscreen?.()
-                    .catch(() => {});
-              }}
+              onClick={toggleFullscreen}
             >
               <ControlIcon name={fullscreen ? "exit" : "fullscreen"} />
             </button>
